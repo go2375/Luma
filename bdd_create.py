@@ -119,7 +119,7 @@ cur.executescript("""
         parcours_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom_parcours TEXT NOT NULL,
         createur_id INTEGER NOT NULL,
-        date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (createur_id) REFERENCES Utilisateur(user_id)
             ON DELETE RESTRICT
             ON UPDATE CASCADE
