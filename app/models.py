@@ -38,8 +38,24 @@ class Database:
         # prêt à être utilisé par l’API.
         return {key: row[key] for key in row.keys()}
 
-# # Modèle pour la table Role
-# class RoleModel:
+# Modèle pour la table Role
+class RoleModel:
+    @staticmethod
+    # Permet de définir la fonction qui va récupérer tous les rôles, 
+    # en indiquant que la fonction retourne une liste de dictionnaires
+    def get_all() -> List[Dict]:
+        # "with" garantit que la connexion sera fermée automatiquement à la sortie du bloc et même en cas d’erreur
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            # Permet de récupérer toutes les colonnes et toutes les lignes de la table Role.
+            cur.execute("SELECT * FROM Role")
+            # cur.fetchall() extrait toutes les lignes du curseur SQL sous forme de liste de tuples, par exemple : [(1, "role_id"), (2, "nom_role")].
+            # Pour chaque tuple row, la fonction Database.dict_from_row(row) convertit la ligne en dictionnaire, c’est-à-dire qu’elle associe chaque nom de colonne à sa valeur : {colonne: valeur}.
+            # Cela permet d’envoyer les résultats SQL à une API sans accéder aux champs par index.
+            # Par exemple, dict_from_row(row) transforme (1, "role_id") en {"id": 1, "name": "role_id"}.
+            # Ainsi, la ligne retourne [{"id": 1, "name": "role_id"}, {"id": 2, "name": "nom_role"}].
+            # Cette approche permet de créer une liste d’objets Python à partir des lignes SQL.
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
 
 # # Modèle pour la table Utilisateur
 # class UtilisateurModel:
