@@ -4,9 +4,10 @@ os.makedirs("./bdd", exist_ok=True)
 
 sqlite_path = "./bdd/bdd_connexion.sqlite"
 conn = sqlite3.connect(sqlite_path)
+# On crée un curseur sur la connexion qui sert à exécuter des requêtes SQL et à récupérer leurs résultat
 cur = conn.cursor()
 
-# Activer les contraintes de clés étrangères
+# Permet d'activer les contraintes de clés étrangères
 cur.execute("PRAGMA foreign_keys = ON;")
 
 # Choix pour les tables :
