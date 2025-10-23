@@ -11,6 +11,7 @@ cur.execute("PRAGMA foreign_keys = ON;")
 
 # Choix pour les tables :
 # Table Role : chaque role_id a un nom unique.
+
 # Table Utilisateur : chaque utilisateur peut avoir un seul rôle (cela peut évoluer facilement et être
 # modifié pour que chaque utilisateur puisse avoir plusieurs rôles, notamment si l’on passe d’un modèle
 # B2C à un modèle hybride B2C/B2B, où les prestataires pourraient également devenir "visiteurs" —
@@ -20,6 +21,8 @@ cur.execute("PRAGMA foreign_keys = ON;")
 # Si, dans la table Role, on supprime un role_id, on ne peut pas le faire tant qu’il existe des utilisateurs
 # associés à ce rôle (ON DELETE RESTRICT) ; en revanche, si l’on modifie la valeur de role_id, tous les
 # utilisateurs liés seront automatiquement mis à jour avec ce nouveau role_id (ON UPDATE CASCADE).
+# RGPD : Les variables deleted_at DATETIME NULL, anonymized BOOLEAN DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP et updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ont été ajoutées pour assurer le respect du RGPD concernant les données des utilisateurs, y compris celles des prestataires. Si nécessaire, le username sera modifié pour être anonymisé.
+# RGPD : Si deleted_at est utilisé, le compte de l’utilisateur est marqué comme supprimé, mais la BDD conserve l’utilisateur pour audit.
 
 # Table Department : chaque department_id est associé à un nom unique : 'nom_department TEXT NOT NULL UNIQUE'.
 
@@ -38,6 +41,10 @@ cur.execute("PRAGMA foreign_keys = ON;")
 # continue d’exister indépendamment de l’existence du compte de son prestataire (ON DELETE SET NULL). En revanche,
 # si l’id du prestataire change, le prestataire_id associé au site correspondant est mis à jour
 # (ON UPDATE CASCADE).
+# RGPD côté prestataires : Les parcours et sites restent accessibles, mais sans révéler l’identité du prestataire, car le prestataire ne révèle pas l’identité réelle de la personne 
+# RGPD : De plus, si un prestataire supprime son compte, le site reste dans la BDD mais n’expose pas le prestataire (ON DELETE SET NULL) 
+# RGPD : (Si c’est le cas, son username ainsi que le nom_site de son site touristique sont correctement anonymisés).
+# RGPD : Les variables deleted_at DATETIME NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, anonymized BOOLEAN DEFAULT 0 ont été ajoutées pour assurer le respect du RGPD concernant les données des prestataires.
 
 # Table Parcours : un utilisateur ne peut pas supprimer son compte tant qu’un parcours qu’il a créé existe,
 # car un parcours doit toujours avoir un créateur identifiable (ON DELETE RESTRICT). En revanche, si
@@ -61,6 +68,10 @@ cur.executescript("""
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         role_id INTEGER NOT NULL,
+        deleted_at DATETIME NULL,
+        anonymized BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (role_id) REFERENCES Role(role_id)
             ON DELETE RESTRICT
             ON UPDATE CASCADE
@@ -92,6 +103,10 @@ cur.executescript("""
         longitude REAL,
         commune_id INTEGER NOT NULL,
         prestataire_id INTEGER,
+        deleted_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        anonymized BOOLEAN DEFAULT 0,
         FOREIGN KEY (commune_id) REFERENCES Commune(commune_id)
             ON DELETE RESTRICT
             ON UPDATE CASCADE,
@@ -104,7 +119,7 @@ cur.executescript("""
         parcours_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom_parcours TEXT NOT NULL,
         createur_id INTEGER NOT NULL,
-        date_creation DATE DEFAULT CURRENT_DATE,
+        date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (createur_id) REFERENCES Utilisateur(user_id)
             ON DELETE RESTRICT
             ON UPDATE CASCADE
