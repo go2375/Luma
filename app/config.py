@@ -24,5 +24,5 @@ class Config:
     # Durée de conservation des utilisateurs inactifs (en jours)
     USER_RETENTION_DAYS = 365 * 3
 
-    # Limiter le nombre maximum de tentatives de connexion pour assurer la sécurité côté login
+    # Limitation du nombre maximum de tentatives de connexion pour assurer la sécurité côté login
     MAX_LOGIN_ATTEMPTS = 5   
