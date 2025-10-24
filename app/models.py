@@ -57,8 +57,158 @@ class RoleModel:
             # Cette approche permet de créer une liste d’objets Python à partir des lignes SQL.
             return [Database.dict_from_row(row) for row in cur.fetchall()]
 
-# # Modèle pour la table Utilisateur
-# class UtilisateurModel:
+# Modèle pour la table Utilisateur
+class UserModel:
+    @staticmethod
+    # Permet de récupérer un utilisateur par son username
+    def get_by_username(username: str) -> Optional[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT u.*, r.nom_role 
+                FROM Utilisateur u
+                JOIN Role r ON u.role_id = r.role_id
+                WHERE u.username = ?
+            """, (username,))
+            row = cur.fetchone()
+            return Database.dict_from_row(row) if row else None
+    
+    @staticmethod
+    # Permet de récupérer un utilisateur par son id
+    def get_by_id(user_id: int) -> Optional[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT u.user_id, u.username, u.role_id, u.anonymized, u.created_at, u.updated_at, r.nom_role
+                FROM Utilisateur u
+                JOIN Role r ON u.role_id = r.role_id
+                WHERE u.user_id = ? AND u.deleted_at IS NULL
+            """, (user_id,))
+            row = cur.fetchone()
+            return Database.dict_from_row(row) if row else None
+
+    @staticmethod
+    # Permet de récupérer tous les utilisateurs non supprimés (sans password_hash)
+    def get_all() -> List[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT u.user_id, u.username, u.role_id, u.anonymized, 
+                       u.created_at, u.updated_at, r.nom_role
+                FROM Utilisateur u
+                JOIN Role r ON u.role_id = r.role_id
+                WHERE u.deleted_at IS NULL
+            """)
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
+    
+    @staticmethod
+    #Permet de créer un nouvel utilisateur
+    def create(username: str, password_hash: str, role_id: int) -> Dict:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO Utilisateur (username, password_hash, role_id)
+                VALUES (?, ?, ?)
+            """, (username, password_hash, role_id))
+            conn.commit()
+            return {
+                # lastrowid permet Cela permet de savoir immédiatement quel est l’id du nouvel utilisateur, sans faire une requête SELECT.
+                'user_id': cur.lastrowid,
+                'username': username,
+                'role_id': role_id
+            }  
+
+    @staticmethod
+    # Permet de mettre à jour les informations d’un utilisateur et mettre à jour updated_at automatiquement
+    def update(user_id: int, **kwargs) -> bool:
+        """Mettre à jour les informations d’un utilisateur (updated_at automatique)"""
+        allowed_fields = ['username', 'role_id', 'password_hash', 'anonymized', 'deleted_at']
+        # Filtrer seulement les champs autorisés
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+        if not updates:
+            return False
+
+        # Ca permet d'jouter updated_at automatiquement
+        updates["updated_at"] = "CURRENT_TIMESTAMP"
+
+        # Ca permet de construire la clause SET dynamiquement
+        set_clause = ", ".join([
+            f"{k} = ?" if k != "updated_at" else f"{k} = {updates[k]}" 
+            for k in updates.keys()
+        ])
+        # Ca permet de préparer les valeurs pour l'exécution (exclude updated_at)
+        values = [v for k, v in updates.items() if k != "updated_at"] + [user_id]
+
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"UPDATE Utilisateur SET {set_clause} WHERE user_id = ?", values)
+            conn.commit()
+            return cur.rowcount > 0
+
+    @staticmethod
+    # Permet de modifier le rôle d'un utilisateur
+    def update_role(user_id: int, role_id: int) -> bool:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE Utilisateur 
+                SET role_id = ? 
+                WHERE user_id = ?
+            """, (role_id, user_id))
+            conn.commit()
+            return cur.rowcount > 0
+    
+    @staticmethod
+    # Permet de modifier le mot de passe d'un utilisateur
+    def update_password(user_id: int, new_password_hash: str) -> bool:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE Utilisateur 
+                SET password_hash = ? 
+                WHERE user_id = ?
+            """, (new_password_hash, user_id))
+            conn.commit()
+            return cur.rowcount > 0
+
+    @staticmethod
+    # Permet de supprimer définitivement un utilisateur
+    def hard_delete(user_id: int) -> bool:
+        try:
+            with Database.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute("DELETE FROM Utilisateur WHERE user_id = ?", (user_id,))
+                conn.commit()
+                return cur.rowcount > 0
+        except sqlite3.IntegrityError:
+            return False
+    
+    @staticmethod
+    # Permet de marquer utilisateur comme supprimé
+    def delete(user_id: int) -> bool:
+        """Soft delete : marquer l'utilisateur comme supprimé"""
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE Utilisateur 
+                SET deleted_at = CURRENT_TIMESTAMP 
+                WHERE user_id = ?
+            """, (user_id,))
+            conn.commit()
+            return cur.rowcount > 0
+
+    @staticmethod
+    # Permet de marquer utilisateur comme anonymisé
+    def mark_as_anonymized(user_id: int) -> bool:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE Utilisateur 
+                SET anonymized = 1 
+                WHERE user_id = ?
+            """, (user_id,))
+            conn.commit()
+            return cur.rowcount > 0
 
 # # Modèle pour la table Site_Touristique
 # class SiteModel:

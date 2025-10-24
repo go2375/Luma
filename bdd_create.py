@@ -69,10 +69,10 @@ cur.executescript("""
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         role_id INTEGER NOT NULL,
-        deleted_at DATETIME NULL,
+        deleted_at TIMESTAMP NULL,
         anonymized BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (role_id) REFERENCES Role(role_id)
             ON DELETE RESTRICT
             ON UPDATE CASCADE
@@ -104,9 +104,9 @@ cur.executescript("""
         longitude REAL,
         commune_id INTEGER NOT NULL,
         prestataire_id INTEGER,
-        deleted_at DATETIME NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         anonymized BOOLEAN DEFAULT 0,
         FOREIGN KEY (commune_id) REFERENCES Commune(commune_id)
             ON DELETE RESTRICT
@@ -120,7 +120,9 @@ cur.executescript("""
         parcours_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom_parcours TEXT NOT NULL,
         createur_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMP NULL,
         FOREIGN KEY (createur_id) REFERENCES Utilisateur(user_id)
             ON DELETE RESTRICT
             ON UPDATE CASCADE
