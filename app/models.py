@@ -210,8 +210,141 @@ class UserModel:
             conn.commit()
             return cur.rowcount > 0
 
-# # Modèle pour la table Site_Touristique
-# class SiteModel:
+# Modèle pour la table Site_Touristique
+class SiteModel:
+    @staticmethod
+    # Permet de récupérer tous les sites non supprimés
+    def get_all(include_prestataire: bool = False) -> List[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            if include_prestataire:
+                cur.execute("""
+                    SELECT s.*, c.nom_commune, d.nom_department
+                    FROM Site_Touristique s
+                    JOIN Commune c ON s.commune_id = c.commune_id
+                    JOIN Department d ON c.department_id = d.department_id
+                    WHERE s.deleted_at IS NULL
+                """)
+            else:
+                cur.execute("""
+                    SELECT s.site_id, s.nom_site, s.type_site, s.description, 
+                           s.latitude, s.longitude, s.commune_id,
+                           s.created_at, s.updated_at,
+                           c.nom_commune, d.nom_department
+                    FROM Site_Touristique s
+                    JOIN Commune c ON s.commune_id = c.commune_id
+                    JOIN Department d ON c.department_id = d.department_id
+                    WHERE s.deleted_at IS NULL
+                """)
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
+    
+    @staticmethod
+    # Permet de récupérer un site par son ID (si non supprimé)
+    def get_by_id(site_id: int, include_prestataire: bool = False) -> Optional[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            if include_prestataire:
+                cur.execute("""
+                    SELECT s.*, c.nom_commune, d.nom_department
+                    FROM Site_Touristique s
+                    JOIN Commune c ON s.commune_id = c.commune_id
+                    JOIN Department d ON c.department_id = d.department_id
+                    WHERE s.site_id = ? AND s.deleted_at IS NULL
+                """, (site_id,))
+            else:
+                cur.execute("""
+                    SELECT s.site_id, s.nom_site, s.type_site, s.description, 
+                           s.latitude, s.longitude, s.commune_id,
+                           s.created_at, s.updated_at,
+                           c.nom_commune, d.nom_department
+                    FROM Site_Touristique s
+                    JOIN Commune c ON s.commune_id = c.commune_id
+                    JOIN Department d ON c.department_id = d.department_id
+                    WHERE s.site_id = ? AND s.deleted_at IS NULL
+                """, (site_id,))
+            row = cur.fetchone()
+            return Database.dict_from_row(row) if row else None
+    
+    @staticmethod
+    # Permet de récupérer tous les sites non supprimés d'un prestataire
+    def get_by_prestataire(prestataire_id: int) -> List[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT s.*, c.nom_commune, d.nom_department
+                FROM Site_Touristique s
+                JOIN Commune c ON s.commune_id = c.commune_id
+                JOIN Department d ON c.department_id = d.department_id
+                WHERE s.prestataire_id = ? AND s.deleted_at IS NULL
+            """, (prestataire_id,))
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
+    
+    @staticmethod
+    # Permet de créer un nouveau site touristique
+    def create(nom_site: str, commune_id: int, prestataire_id: Optional[int] = None,
+               type_site: Optional[str] = None, description: Optional[str] = None,
+               latitude: Optional[float] = None, longitude: Optional[float] = None) -> Dict:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO Site_Touristique 
+                (nom_site, type_site, description, latitude, longitude, commune_id, prestataire_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (nom_site, type_site, description, latitude, longitude, commune_id, prestataire_id))
+            conn.commit()
+            return {'site_id': cur.lastrowid}
+    
+    @staticmethod
+    # Permet de mettre à jour les informations d’un site touristique avec updated_at mise à jour automatiquement
+    def update(site_id: int, **kwargs) -> bool:
+        allowed_fields = ['nom_site', 'type_site', 'description', 'latitude', 'longitude', 
+                          'commune_id', 'prestataire_id', 'anonymized', 'deleted_at']
+        # Permet de filtrer uniquement les champs autorisés
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+        if not updates:
+            return False
+
+        # Ajoute la mise à jour automatique du timestamp
+        updates["updated_at"] = "CURRENT_TIMESTAMP"
+
+        # Prépare la clause SET
+        set_clause = ", ".join([f"{k} = ?" if k != "updated_at" else f"{k} = {updates[k]}" 
+                                for k in updates.keys()])
+        values = [v for k, v in updates.items() if k != "updated_at"] + [site_id]
+
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"UPDATE Site_Touristique SET {set_clause} WHERE site_id = ?", values)
+            conn.commit()
+            return cur.rowcount > 0
+    
+    @staticmethod
+    # Permet de marquer un site comme supprimé via deleted_at
+    def delete(site_id: int) -> bool:
+        try:
+            with Database.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE Site_Touristique 
+                    SET deleted_at = CURRENT_TIMESTAMP 
+                    WHERE site_id = ?
+                """, (site_id,))
+                conn.commit()
+                return cur.rowcount > 0
+        except sqlite3.IntegrityError:
+            return False
+    
+    @staticmethod
+    # Permet de supprimer définitivement un site
+    def hard_delete(site_id: int) -> bool:
+        try:
+            with Database.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute("DELETE FROM Site_Touristique WHERE site_id = ?", (site_id,))
+                conn.commit()
+                return cur.rowcount > 0
+        except sqlite3.IntegrityError:
+            return False
 
 # # Modèle pour la table Parcours
 # class ParcoursModel:
