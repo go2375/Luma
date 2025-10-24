@@ -82,6 +82,7 @@ class RoleModel:
             cur = conn.cursor()
             cur.execute("UPDATE Role SET nom_role = ? WHERE role_id = ?", (nom_role, role_id))
             conn.commit()
+            # Permet de retourner True si au moins une ligne a été modifiée
             return cur.rowcount > 0
     
     @staticmethod
@@ -385,8 +386,138 @@ class SiteModel:
         except sqlite3.IntegrityError:
             return False
 
-# # Modèle pour la table Parcours
-# class ParcoursModel:
+# Modèle pour la table Parcours
+class ParcoursModel:
+    @staticmethod
+    # Permet de récupérer tous les parcours d'un utilisateur
+    def get_by_user(user_id: int) -> List[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT p.*, u.username as createur_username
+                FROM Parcours p
+                JOIN Utilisateur u ON p.createur_id = u.user_id
+                WHERE p.createur_id = ?
+            """, (user_id,))
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
+
+    @staticmethod
+    # Permet de récupérer un parcours avec ses sites touristiques
+    def get_by_id(parcours_id: int) -> Optional[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            # D'abord on récupère les parcours
+            cur.execute("""
+                SELECT p.*, u.username as createur_username
+                FROM Parcours p
+                JOIN Utilisateur u ON p.createur_id = u.user_id
+                WHERE p.parcours_id = ?
+            """, (parcours_id,))
+            parcours = cur.fetchone()
+            if not parcours:
+                return None
+
+            parcours_dict = Database.dict_from_row(parcours)
+
+            # Ensuite on récupère les sites du parcours
+            cur.execute("""
+                SELECT ps.ordre_visite, s.site_id, s.nom_site, s.type_site, 
+                       s.description, s.latitude, s.longitude,
+                       c.nom_commune, d.nom_department
+                FROM Parcours_Site ps
+                JOIN Site_Touristique s ON ps.site_id = s.site_id
+                JOIN Commune c ON s.commune_id = c.commune_id
+                JOIN Department d ON c.department_id = d.department_id
+                WHERE ps.parcours_id = ?
+                ORDER BY ps.ordre_visite
+            """, (parcours_id,))
+            parcours_dict['sites'] = [Database.dict_from_row(row) for row in cur.fetchall()]
+
+            return parcours_dict
+
+    @staticmethod
+    # Permet de créer un nouveau parcours et y ajouter des sites touristiques via sites (list[dict], optional), ici liste de sites ajoutée au parcours.
+    def create(nom_parcours: str, createur_id: int, sites: list[dict] = None) -> Dict:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            # On crée le parcours
+            cur.execute(
+                "INSERT INTO Parcours (nom_parcours, createur_id) VALUES (?, ?)",
+                (nom_parcours, createur_id)
+            )
+            parcours_id = cur.lastrowid
+
+            # Ensuite on ajoute les sites
+            if sites:
+                for site in sites:
+                    site_id = site['site_id']
+                    ordre_visite = site.get('ordre_visite')
+                    cur.execute(
+                        "INSERT INTO Parcours_Site (parcours_id, site_id, ordre_visite) VALUES (?, ?, ?)",
+                        (parcours_id, site_id, ordre_visite)
+                    )
+
+            conn.commit()
+            return {'parcours_id': parcours_id}
+
+    @staticmethod
+    # Permet de mettre à jour un parcours avec updated_at mise à jour automatiquement, aussi si des sites d'un parcours ont été si des sites ont été retirés
+    def update(parcours_id: int, **kwargs) -> bool:
+        allowed_fields = ['nom_parcours', 'deleted_at']
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+
+        # Permet de récupérer le nombre actuel de sites liés au parcours
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT COUNT(*) AS nb_sites
+                FROM Parcours_Site
+                WHERE parcours_id = ?
+            """, (parcours_id,))
+            nb_sites = cur.fetchone()['nb_sites']
+
+        # Permet de vérifier si updated_at doit être mis à jour, soit parce qu'il y a des champs à mettre à jour,
+        # soit parce que le nombre de sites a diminué (site à été supprimé)
+        if updates or ('nb_sites_precedent' in kwargs and nb_sites < kwargs['nb_sites_precedent']):
+            updates['updated_at'] = "CURRENT_TIMESTAMP"
+
+        if not updates:
+            return False
+
+        set_clause = ", ".join([
+            f"{k} = ?" if k != "updated_at" else f"{k} = {updates[k]}" 
+            for k in updates.keys()
+        ])
+        values = [v for k, v in updates.items() if k != "updated_at"] + [parcours_id]
+
+        # Permet d'exécuter la mise à jour dans la base de données
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"UPDATE Parcours SET {set_clause} WHERE parcours_id = ?", values)
+            conn.commit()
+
+            return cur.rowcount > 0
+
+    @staticmethod
+    # Permet de supprimer un parcours
+    def delete(parcours_id: int) -> bool:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM Parcours WHERE parcours_id = ?", (parcours_id,))
+            conn.commit()
+            return cur.rowcount > 0
+
+    @staticmethod
+    # Permet de retirer un site d'un parcours
+    def remove_site(parcours_id: int, site_id: int) -> bool:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                DELETE FROM Parcours_Site 
+                WHERE parcours_id = ? AND site_id = ?
+            """, (parcours_id, site_id))
+            conn.commit()
+            return cur.rowcount > 0
 
 # Modèle pour la table Commune
 class CommuneModel:
@@ -411,4 +542,3 @@ class DepartmentModel:
             cur = conn.cursor()
             cur.execute("SELECT * FROM Department")
             return [Database.dict_from_row(row) for row in cur.fetchall()]
-    
