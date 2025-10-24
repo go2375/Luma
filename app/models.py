@@ -57,6 +57,45 @@ class RoleModel:
             # Cette approche permet de créer une liste d’objets Python à partir des lignes SQL.
             return [Database.dict_from_row(row) for row in cur.fetchall()]
 
+    @staticmethod
+    # Permet de récupérer un rôle par son ID
+    def get_by_id(role_id: int) -> Optional[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM Role WHERE role_id = ?", (role_id,))
+            row = cur.fetchone()
+            return Database.dict_from_row(row) if row else None
+    
+    @staticmethod
+    # Permet de créer un nouveau rôle
+    def create(nom_role: str) -> Dict:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO Role (nom_role) VALUES (?)", (nom_role,))
+            conn.commit()
+            return {'role_id': cur.lastrowid, 'nom_role': nom_role}
+    
+    @staticmethod
+    # Permet de modifier un rôle
+    def update(role_id: int, nom_role: str) -> bool:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("UPDATE Role SET nom_role = ? WHERE role_id = ?", (nom_role, role_id))
+            conn.commit()
+            return cur.rowcount > 0
+    
+    @staticmethod
+    # Permet de supprimer un rôle
+    def delete(role_id: int) -> bool:
+        try:
+            with Database.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute("DELETE FROM Role WHERE role_id = ?", (role_id,))
+                conn.commit()
+                return cur.rowcount > 0
+        except sqlite3.IntegrityError:
+            return False
+
 # Modèle pour la table Utilisateur
 class UserModel:
     @staticmethod
