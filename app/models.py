@@ -402,5 +402,13 @@ class CommuneModel:
             """)
             return [Database.dict_from_row(row) for row in cur.fetchall()]
 
-# # Modèle pour la table Department
-# class DepartmentModel:
+# Modèle pour la table Department
+class DepartmentModel:
+    # Permet de récupérer tous les départements
+    @staticmethod
+    def get_all() -> List[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM Department")
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
+    
