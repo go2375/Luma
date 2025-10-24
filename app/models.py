@@ -349,8 +349,19 @@ class SiteModel:
 # # Modèle pour la table Parcours
 # class ParcoursModel:
 
-# # Modèle pour la table Commune
-# class CommuneModel:
+# Modèle pour la table Commune
+class CommuneModel:
+    # Permet de récupérer toutes les communes
+    @staticmethod
+    def get_all() -> List[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT c.*, d.nom_department
+                FROM Commune c
+                JOIN Department d ON c.department_id = d.department_id
+            """)
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
 
 # # Modèle pour la table Department
 # class DepartmentModel:
