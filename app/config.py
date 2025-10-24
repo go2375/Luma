@@ -15,8 +15,8 @@ class Config:
     # Base de données
     DATABASE_PATH = os.environ.get("DATABASE_PATH", "./bdd/bdd_connexion.sqlite")
 
-    # CORS pour Streamlit local et production
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:8501').split(',')
+    # CORS pour Flask local et production
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:8500').split(',')
 
     # Durée de validité des tokens JWT
     JWT_EXPIRATION = timedelta(hours=24)
@@ -25,4 +25,26 @@ class Config:
     USER_RETENTION_DAYS = 365 * 3
 
     # Limitation du nombre maximum de tentatives de connexion pour assurer la sécurité côté login
-    MAX_LOGIN_ATTEMPTS = 5   
+    MAX_LOGIN_ATTEMPTS = 5
+
+    # RGPD
+    # Types de sites où les coordonnées GPS doivent être masquées
+    RESIDENTIAL_SITE_TYPES = [
+        'gite',
+        'chambre_hote',
+        'maison_privee',
+        'location_vacances'
+    ]
+    
+    # Types de sites où les coordonnées GPS peuvent être affichées
+    PUBLIC_SITE_TYPES = [
+        'monument',
+        'musee',
+        'parc',
+        'plage',
+        'chateau',
+        'eglise',
+        'site_naturel',
+        'port',
+        'jardin'
+    ]
