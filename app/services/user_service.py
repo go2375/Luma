@@ -84,34 +84,35 @@ class UserService:
         return {'success': False, 'error': 'Échec de la mise à jour'}
     
     @staticmethod
-    # Permet de anonymiser ou marquer comme supprimé le compte d'un utilisateur
-    def delete_account(user_id: int, password: str, anonymize: bool = False):
-        # On récupère l'utilisateur
+    # Permet d’anonymiser ou de marquer comme supprimé le compte d’un utilisateur
+    def delete_account(user_id: int, password: str, anonymize: bool = True) -> dict:
+        # On récupère l’utilisateur depuis la base de données
         user = UserModel.get_by_id(user_id)
         if not user:
             return {'success': False, 'error': 'Utilisateur introuvable'}
         
-        # On récupère le hash complet
+        # On récupère le hash complet (avec get_by_username)
         user_full = UserModel.get_by_username(user['username'])
-        
+
         # On vérifie le mot de passe
         if not AuthService.verify_password(password, user_full['password_hash']):
             return {'success': False, 'error': 'Mot de passe incorrect'}
         
-        if anonymize:
-            # On anonymise le compte
+        # Si l’utilisateur demande l’anonymisation ou si son nom d’utilisateur est identifiable
+        if anonymize or is_identifiable(user['username']):
             new_username = anonymize_username(user_id)
             return {
-                'success': True, 
+                'success': True,
                 'method': 'anonymized',
                 'new_username': new_username,
                 'message': 'Compte anonymisé conformément au RGPD'
             }
+        
+        # Sinon on marque le compte comme supprimé
+        success = UserModel.delete(user_id)
+        if success:
+                return {'success': True, 'method': 'deleted', 'message': 'Compte supprimé avec succès.'}
         else:
-            # On marque le compte comme supprimé
-            success = UserModel.delete(user_id)
-            if success:
-                return {'success': True, 'method': 'deleted'}
             return {'success': False, 'error': 'Échec de la suppression (parcours associés)'}
     
     @staticmethod
