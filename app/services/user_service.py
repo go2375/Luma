@@ -76,7 +76,7 @@ class UserService:
         # On hache le nouveau mot de passe
         new_password_hash = AuthService.hash_password(new_password)
         
-        # On effectue mise à jour
+        # On effectue une mise à jour
         success = UserModel.update_password(user_id, new_password_hash)
         
         if success:
