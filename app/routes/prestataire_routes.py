@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.auth import token_required, role_required
+from app.decorators import token_required, role_required
 from app.models import SiteModel
 
 # Ces routes permettent aux prestataires de gérer leurs sites touristiques
