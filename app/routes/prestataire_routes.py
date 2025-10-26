@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.decorators import token_required, role_required
-from app.models import SiteModel
+from app.services.site_service import SiteService
 
 # Ces routes permettent aux prestataires de gérer leurs sites touristiques
 prestataire_bp = Blueprint('prestataire', __name__, url_prefix='/api/prestataire')
@@ -8,9 +8,9 @@ prestataire_bp = Blueprint('prestataire', __name__, url_prefix='/api/prestataire
 # Cette route permet à un prestataire de récupérer tous les sites appartenant à ce prestataire
 @prestataire_bp.route('/sites', methods=['GET'])
 @token_required
-@role_required('prestataire')
+@role_required(current_user)
 def get_my_sites(current_user):
-    sites = SiteModel.get_by_prestataire(current_user['user_id'])
+    sites = SiteService.get_sites_by_prestataire(current_user['user_id'])
     return jsonify({'sites': sites}), 200
 
 # Cette route permet à un prestataire de récupérer un site spécifique choisi
@@ -18,14 +18,13 @@ def get_my_sites(current_user):
 @token_required
 @role_required('prestataire')
 def get_site(current_user, site_id):
-    site = SiteModel.get_by_id(site_id, include_prestataire=True)
-    
-    if not site:
-        return jsonify({'error': 'Site introuvable'}), 404
+    mes_sites = SiteService.get_sites_by_prestataire(current_user['user_id'])
     
     # Permet de vérifier que le site appartient au prestataire
-    if site['prestataire_id'] != current_user['user_id']:
-        return jsonify({'error': 'Accès refusé'}), 403
+    site = next((s for s in mes_sites if s['site_id'] == site_id), None)
+
+    if not site:
+        return jsonify({'error': 'Site introuvable ou accès refusé'}), 404 
     
     return jsonify({'site': site}), 200
 
@@ -40,7 +39,7 @@ def create_site(current_user):
         return jsonify({'error': 'nom_site et commune_id requis'}), 400
     
     # Permet de créer le site avec le prestataire_id de l'utilisateur connecté
-    site = SiteModel.create(
+    result = SiteService.create_site(
         nom_site=data['nom_site'],
         commune_id=data['commune_id'],
         prestataire_id=current_user['user_id'],
@@ -50,9 +49,12 @@ def create_site(current_user):
         longitude=data.get('longitude')
     )
     
+    if not result['success']:
+        return jsonify({'error': result['error']}), 400
+
     return jsonify({
         'message': 'Site créé avec succès',
-        'site': site
+        'site_id': result['site_id']
     }), 201
 
 # Cette route permet à un prestataire de modifier son site touristique
@@ -60,43 +62,33 @@ def create_site(current_user):
 @token_required
 @role_required('prestataire')
 def update_site(current_user, site_id):
-    """Modifier un site touristique"""
-    site = SiteModel.get_by_id(site_id, include_prestataire=True)
-    
-    if not site:
-        return jsonify({'error': 'Site introuvable'}), 404
-    
-    # Permet de vérifier que le site appartient au prestataire
-    if site['prestataire_id'] != current_user['user_id']:
-        return jsonify({'error': 'Accès refusé'}), 403
-    
     data = request.get_json()
     
     if not data:
         return jsonify({'error': 'Données manquantes'}), 400
     
-    success = SiteModel.update(site_id, **data)
+    result = SiteService.update_site(
+        site_id=site_id,
+        prestataire_id=current_user['user_id'],
+        **data
+    )
     
-    if success:
-        return jsonify({'message': 'Site mis à jour avec succès'}), 200
-    return jsonify({'error': 'Échec de la mise à jour'}), 400
-
+    if not result['success']:
+        return jsonify({'error': result['error']}), 403 if 'Accès refusé' in result['error'] else 400
+    
+    return jsonify({'message': 'Site mis à jour avec succès'}), 200
+    
 # Cette route permet à un prestataire de supprimer son site touristique
 @prestataire_bp.route('/sites/<int:site_id>', methods=['DELETE'])
 @token_required
 @role_required('prestataire')
 def delete_site(current_user, site_id):
-    site = SiteModel.get_by_id(site_id, include_prestataire=True)
-    
-    if not site:
-        return jsonify({'error': 'Site introuvable'}), 404
-    
-    # Permet de vérifier que le site appartient au prestataire
-    if site['prestataire_id'] != current_user['user_id']:
-        return jsonify({'error': 'Accès refusé'}), 403
-    
-    success = SiteModel.delete(site_id)
-    
-    if success:
-        return jsonify({'message': 'Site supprimé avec succès'}), 200
-    return jsonify({'error': 'Échec de la suppression (site utilisé dans des parcours)'}), 400
+    result = SiteService.delete_site(
+        site_id=site_id,
+        prestataire_id=current_user['user_id']
+    )
+
+    if not result['success']:
+        return jsonify({'error': result['error']}), 403 if 'Accès refusé' in result['error'] else 400
+
+    return jsonify({'message': 'Site supprimé avec succès'}), 200
