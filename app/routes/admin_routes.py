@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from app.auth import AuthService
 from app.decorators import token_required, role_required
+from app.services.role_service import RoleService
+from app.services.user_service import UserService
 from app.models import RoleModel, UserModel
 
 ### Ces routes permettent à un admin de gérer des rôles et des comptes des utilisateurs
@@ -12,7 +14,7 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 @token_required
 @role_required('admin')
 def get_roles(current_user):
-    roles = RoleModel.get_all()
+    roles = RoleService.get_all_roles()
     return jsonify({'roles': roles}), 200
 
 # Cette route permet à un admin de créer un nouveau rôle
@@ -25,14 +27,15 @@ def create_role(current_user):
     if not data or 'nom_role' not in data:
         return jsonify({'error': 'nom_role requis'}), 400
     
-    try:
-        role = RoleModel.create(data['nom_role'])
-        return jsonify({
-            'message': 'Rôle créé avec succès',
-            'role': role
-        }), 201
-    except Exception as e:
-        return jsonify({'error': f'Erreur lors de la création: {str(e)}'}), 400
+    result = RoleService.create_role(data['nom_role'])
+    
+    if not result['success']:
+        return jsonify({'error': result['error']}), 400
+    
+    return jsonify({
+        'message': 'Rôle créé avec succès',
+        'role': result['role']
+    }), 201
 
 # Cette route permet à un admin de modifier un rôle existant
 @admin_bp.route('/roles/<int:role_id>', methods=['PUT'])
@@ -59,16 +62,12 @@ def update_role(current_user, role_id):
 @token_required
 @role_required('admin')
 def delete_role(current_user, role_id):
-    # Ca permet d'empêcher la suppression des rôles système
-    role = RoleModel.get_by_id(role_id)
-    if role and role['nom_role'] in ['admin', 'visiteur', 'prestataire']:
-        return jsonify({'error': 'Impossible de supprimer un rôle système'}), 403
+    result = RoleService.update_role(role_id, data['nom_role'])
     
-    success = RoleModel.delete(role_id)
+    if not result['success']:
+        return jsonify({'error': result['error']}), 400
     
-    if success:
-        return jsonify({'message': 'Rôle supprimé avec succès'}), 200
-    return jsonify({'error': 'Échec de la suppression (utilisateurs associés ou rôle introuvable)'}), 400
+    return jsonify({'message': 'Rôle mis à jour avec succès'}), 200
 
 ## Ces routes permettent à un admin de gérer des comptes des utilisateurs
 # Cette route permet à un admin de récupérer tous les utilisateurs
@@ -84,7 +83,7 @@ def get_users(current_user):
 @token_required
 @role_required('admin')
 def get_user(current_user, user_id):
-    user = UserModel.get_by_id(user_id)
+    user = UserService.get_user_info(user_id)
     
     if not user:
         return jsonify({'error': 'Utilisateur introuvable'}), 404
@@ -105,19 +104,15 @@ def create_user(current_user):
     if UserModel.get_by_username(data['username']):
         return jsonify({'error': 'Ce username existe déjà'}), 409
     
-    # Vérifier que le rôle existe
-    if not RoleModel.get_by_id(data['role_id']):
-        return jsonify({'error': 'Rôle invalide'}), 400
-    
-    # Permet d'hasher le mot de passe
-    password_hash = AuthService.hash_password(data['password'])
-    
     # Permet de créer l'utilisateur
-    user = UserModel.create(
+    user = UserService.create_user(
         username=data['username'],
         password_hash=password_hash,
         role_id=data['role_id']
     )
+    
+    if not user:
+        return jsonify({'error': 'Ce username existe déjà ou le rôle est invalide'}), 409
     
     return jsonify({
         'message': 'Utilisateur créé avec succès',
@@ -135,7 +130,8 @@ def update_user_password(current_user, user_id):
         return jsonify({'error': 'new_password requis'}), 400
     
     # Permet de vérifier que l'utilisateur existe
-    if not UserModel.get_by_id(user_id):
+    user = UserModel.get_by_id(user_id)
+    if not user:
         return jsonify({'error': 'Utilisateur introuvable'}), 404
     
     # Permet d'hasher le nouveau mot de passe
@@ -158,11 +154,13 @@ def update_user_role(current_user, user_id):
         return jsonify({'error': 'role_id requis'}), 400
     
     # Permet de vérifier que l'utilisateur existe
-    if not UserModel.get_by_id(user_id):
+    user = UserModel.get_by_id(user_id)
+    if not user:
         return jsonify({'error': 'Utilisateur introuvable'}), 404
     
     # Permet de vérifier que le rôle existe
-    if not RoleModel.get_by_id(data['role_id']):
+    role = RoleModel.get_by_id(data['role_id'])
+    if not role:
         return jsonify({'error': 'Rôle invalide'}), 400
     
     # Permet d'empêcher un admin de changer son propre rôle (sécurité)
@@ -185,7 +183,8 @@ def delete_user(current_user, user_id):
         return jsonify({'error': 'Impossible de supprimer son propre compte'}), 403
     
     # Permet de vérifier que l'utilisateur existe
-    if not UserModel.get_by_id(user_id):
+    user = UserModel.get_by_id(user_id)
+    if not user:
         return jsonify({'error': 'Utilisateur introuvable'}), 404
     
     success = UserModel.delete(user_id)
