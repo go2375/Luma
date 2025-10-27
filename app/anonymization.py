@@ -9,12 +9,12 @@ from app.config import Config
 # Permet de vérifier si le username peut conduire à identifier une personne. On vérifie si username contient :
 # '@' (adresse e-mail probable), '.' (format prenom.nom), les espaces ou si username ne respecte pas le pattern sécurisé.
 def is_identifiable(username: str) -> bool:
-    if '@' in username or '.' in username or ' ' in username:
+    if "@" in username or "." in username or " " in username:
         # Si l’un de ces cas est vrai, on considère que le username est identifiable et qu'il est à anonymiser
         return True
     
     # On vérifie la pattern sécurisé (lettres minuscules, chiffres, underscore, 4-20 caractères)
-    if not re.fullmatch(r'[a-z0-9_]{4,20}', username):
+    if not re.fullmatch(r"[a-z0-9_]{4,20}", username):
         return True
     
     return False
@@ -81,16 +81,16 @@ def validate_and_fix_username(username: str, user_id: int = None) -> str:
 # Permet d'anonymiser le nom d'un site si qu'il pourra conduire à exposer une identité d'une personne
 
 def anonymize_nom_site(site_row: dict) -> str:
-    nom_site = site_row.get('nom_site', '')
-    type_site = site_row.get('type_site', '')
-    site_id = site_row.get('site_id', 0)
+    nom_site = site_row.get("nom_site", "")
+    type_site = site_row.get("type_site", "")
+    site_id = site_row.get("site_id", 0)
     
     # Si site est résidentiel et il contient possiblement un nom de personne, ca permet de détecter
     # s'il y a majuscules multiples suggérant un nom et ensuite d'anonymiser ce nom de site en gardant
     # seulement le type de site et id de site 
     if type_site in Config.RESIDENTIAL_SITE_TYPES:
-        if re.search(r'[A-Z][a-z]+\s+[A-Z][a-z]+', nom_site):
-            type_label = type_site.replace('_', ' ').title()
+        if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", nom_site):
+            type_label = type_site.replace("_", " ").title()
             return f"{type_label} #{site_id}"
     
     return nom_site
@@ -100,23 +100,23 @@ def anonymize_nom_site(site_row: dict) -> str:
 # permet d'exclure prestataire_id.
 def site_to_public_dict(site_row: dict) -> dict:
     public_data = {
-        "site_id": site_row.get('site_id'),
+        "site_id": site_row.get("site_id"),
         "nom_site": anonymize_nom_site(site_row),
-        "type_site": site_row.get('type_site'),
-        "commune_id": site_row.get('commune_id'),
-        "nom_commune": site_row.get('nom_commune'),
-        "nom_department": site_row.get('nom_department'),
-        "description": site_row.get('description'),
-        "created_at": site_row.get('created_at')
+        "type_site": site_row.get("type_site"),
+        "commune_id": site_row.get("commune_id"),
+        "nom_commune": site_row.get("nom_commune"),
+        "nom_department": site_row.get("nom_department"),
+        "description": site_row.get("description"),
+        "created_at": site_row.get("created_at")
     }
     
     # On affiche la géolocalisation uniquement pour les sites publics
-    if site_row.get('type_site') not in Config.RESIDENTIAL_SITE_TYPES:
-        public_data["latitude"] = site_row.get('latitude')
-        public_data["longitude"] = site_row.get('longitude')
+    if site_row.get("type_site") not in Config.RESIDENTIAL_SITE_TYPES:
+        public_data["latitude"] = site_row.get("latitude")
+        public_data["longitude"] = site_row.get("longitude")
     else:
         # Pour sites résidentiels on affiche seulement la commune pour assurer la protection de la vie privée des prestataires
-        public_data["localisation_approximative"] = site_row.get('nom_commune')
+        public_data["localisation_approximative"] = site_row.get("nom_commune")
     
     return public_data
 
@@ -124,18 +124,18 @@ def site_to_public_dict(site_row: dict) -> dict:
 # Cet affichage comprend toutes les données, y compris les coordonnées exactes du prestataire
 def site_to_prestataire_dict(site_row: dict) -> dict:
     return {
-        "site_id": site_row.get('site_id'),
-        "nom_site": site_row.get('nom_site'),
-        "type_site": site_row.get('type_site'),
-        "description": site_row.get('description'),
-        "latitude": site_row.get('latitude'),
-        "longitude": site_row.get('longitude'),
-        "commune_id": site_row.get('commune_id'),
-        "nom_commune": site_row.get('nom_commune'),
-        "nom_department": site_row.get('nom_department'),
-        "prestataire_id": site_row.get('prestataire_id'),
-        "created_at": site_row.get('created_at'),
-        "updated_at": site_row.get('updated_at')
+        "site_id": site_row.get("site_id"),
+        "nom_site": site_row.get("nom_site"),
+        "type_site": site_row.get("type_site"),
+        "description": site_row.get("description"),
+        "latitude": site_row.get("latitude"),
+        "longitude": site_row.get("longitude"),
+        "commune_id": site_row.get("commune_id"),
+        "nom_commune": site_row.get("nom_commune"),
+        "nom_department": site_row.get("nom_department"),
+        "prestataire_id": site_row.get("prestataire_id"),
+        "created_at": site_row.get("created_at"),
+        "updated_at": site_row.get("updated_at")
     }
 
 # Permet de supprimer définitivement les enregistrements marqués comme supprimés depuis plus de 30 jours.
@@ -143,7 +143,7 @@ def site_to_prestataire_dict(site_row: dict) -> dict:
 def cleanup_old_deleted_records(days: int = 30):
     from datetime import datetime, timedelta
     
-    cutoff_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
+    cutoff_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     
     with sqlite3.connect(Config.DATABASE_PATH) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
