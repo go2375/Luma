@@ -8,21 +8,18 @@ from app.auth import AuthService
 def token_required(f):
     @wraps(f)
     async def wrapper(*args, request: Request, **kwargs):
-        token = None
         
         # Permet de récupérer le token depuis les headers Authorization
         auth_header = request.headers.get('Authorization')
-        if auth_header:
-            parts = auth_header.split(" ")
-            if len(parts) == 2 and parts[0].lower() == "bearer":
-                token = parts[1]
-            else:
-                raise HTTPException(status_code=401, detail="Format de token invalide. Utilisez: Bearer <token>")
-        
-        if not token:
+        if not auth_header:
             raise HTTPException(status_code=401, detail="Token manquant. Authentification requise.")
         
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Format de token invalide. Utilisez: Bearer <token>")
 
+        token = parts[1]
+        
         # On vérifie le token
         result = AuthService.decode_token(token)
         # Si pas de token trouvé un message de notification s'affiche
