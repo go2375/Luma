@@ -4,7 +4,7 @@ from app.routes.auth_routes import router as auth_router
 from app.routes.admin_routes import router as admin_router
 from app.routes.prestataire_routes import router as prestataire_router
 from app.routes.public_routes import router as public_router
-from app.anonymization_utils import check_and_fix_all_usernames
+from app.anonymization import check_and_fix_all_usernames
 from app.config import Config
 
 # On vérifie RGPD avant lancement
@@ -33,6 +33,6 @@ app.include_router(prestataire_router)
 app.include_router(public_router)
 
 # On gère Health Check
-@app.get("/api/health")
+@app.get("/api/health", tags=["Default"])
 def health_check():
     return {"status": "ok", "message": "API Luméa fonctionne correctement"}

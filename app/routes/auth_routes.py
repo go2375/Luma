@@ -11,7 +11,7 @@ router = APIRouter(
 
 # On crée le router pour login pour authentifier un utilisateur et renvoyer un token JWT
 @router.post("/login", tags=["Authentification"])
-async def loginlogin(
+async def login(
     username: str = Body(..., description="Nom d'utilisateur", example="jean123"),
     password: str = Body(..., description="Mot de passe", example="Password123!")
 ):

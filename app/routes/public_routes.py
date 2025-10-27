@@ -90,7 +90,7 @@ def get_parcours_detail(
 @router.post("/parcours", tags=["Parcours"])
 @token_required
 # Permet de créer un nouveau parcours
-def create_parcours(current_user)(
+def create_parcours(
     nom_parcours: str = Body(..., description="Nom du parcours à créer", example="Parcours nature et patrimoine"),
     sites: list[int] = Body(None, description="Liste des IDs de sites à inclure dans le parcours", example=[1, 2, 3]),
     current_user: dict = None
@@ -247,7 +247,7 @@ async def delete_my_account(
         anonymize=anonymize
     )
     
-       if not result["success"]:
+    if not result["success"]:
         raise HTTPException(status_code=401, detail=result["error"])
     
     if result.get("method") == "anonymized":
