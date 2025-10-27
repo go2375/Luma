@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Body, Path
 from fastapi.responses import JSONResponse
 from app.decorators import token_required, role_required
 from app.services.role_service import RoleService
@@ -17,6 +17,9 @@ admin_router = APIRouter(
 @token_required
 @role_required("admin")
 async def get_roles(current_user: dict):
+    """
+    Récupère la liste complète des rôles disponibles.
+    """
     roles = RoleService.get_all_roles()
     return {"roles": roles}
 
@@ -24,9 +27,13 @@ async def get_roles(current_user: dict):
 @admin_router.post("/roles")
 @token_required
 @role_required("admin")
-async def create_role(request: Request, current_user: dict):
-    data = await request.json()
-    nom_role = data.get("nom_role")
+async def create_role(
+    current_user: dict,
+    nom_role: str = Body(..., description="Nom du rôle à créer", example="visiteur")
+):
+    """
+    Crée un nouveau rôle dans le système.
+    """
     
     if not data or "nom_role" not in data:
         raise HTTPException(status_code=400, detail="nom_role requis")
@@ -36,22 +43,23 @@ async def create_role(request: Request, current_user: dict):
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error", "Échec de la création"))
     
-    return JSONResponse(content={
-        "message": "Rôle créé avec succès",
-        "role": result["role"]
-    }, status_code=201)
+    rreturn JSONResponse(
+        status_code=201,
+        content={"success": True, "message": "Rôle créé", "role": result["role"]}
+    )
 
 # Cet router permet à un admin de modifier un rôle existant
 @admin_router.put("/roles/{role_id}")
 @token_required
 @role_required("admin")
-async def update_role(role_id: int, request: Request, current_user: dict):
-    data = await request.json()
-    nom_role = data.get("nom_role")
-    
-    if not data or "nom_role" not in data:
-        raise HTTPException(status_code=400, detail="nom_role requis")
-    
+async def update_role(
+    current_user: dict,
+    role_id: int = Path(..., description="ID du rôle à modifier", example=2),
+    nom_role: str = Body(..., description="Nouveau nom du rôle", example="visiteur_pro")
+):
+    """
+    Met à jour le nom d’un rôle existant.
+    """
     # Permet de vérifier que le rôle existe
     if not RoleModel.get_by_id(role_id):
         raise HTTPException(status_code=404, detail="Rôle introuvable")
@@ -64,16 +72,22 @@ async def update_role(role_id: int, request: Request, current_user: dict):
     return {"message": "Rôle mis à jour avec succès"}
 
 # Cet router permet à un admin de supprimer un rôle existant
-@admin_router.delete("/roles/{role_id}")
+@admin_router.delete("/roles/{role_id}", tags=["Rôles"])
 @token_required
 @role_required("admin")
-async def delete_role(role_id: int, current_user: dict):
+async def delete_role(
+    current_user: dict,
+    role_id: int = Path(..., description="ID du rôle à supprimer", example=2)
+):
+    """
+    Supprime un rôle (à l'exception des rôles clés pour le système).
+    """
     result = RoleService.delete_role(role_id)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error", "Échec de la suppression"))
 
-    return {"message": "Rôle supprimé avec succès"}
+    return {"success": True, "message": "Rôle supprimé"}
 
 ## Ces routers permettent à un admin de gérer des comptes des utilisateurs
 # Cet router permet à un admin de récupérer tous les utilisateurs
@@ -81,6 +95,9 @@ async def delete_role(role_id: int, current_user: dict):
 @token_required
 @role_required("admin")
 async def get_users(current_user: dict):
+    """
+    Récupère la liste de tous les utilisateurs actifs.
+    """
     users = UserModel.get_all()
     return {"users": users}
 
@@ -88,24 +105,33 @@ async def get_users(current_user: dict):
 @admin_router.get("/users/{user_id}")
 @token_required
 @role_required("admin")
-async def get_user(user_id: int, current_user: dict):
+async def get_user(
+    current_user: dict,
+    user_id: int = Path(..., description="ID de l'utilisateur à consulter", example=7)
+):
+    """
+    Récupère les informations détaillées d’un utilisateur par son ID.
+    """
     user = UserService.get_user_info(user_id)
     
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
     
-    return {"user": user}
+    return {"success": True, "user": user}
 
 # Cet router permet à un admin de créer un nouvel utilisateur
-@admin_router.post("/users")
+@admin_router.post("/users", tags=["Utilisateurs"])
 @token_required
 @role_required("admin")
-async def create_user(request: Request, current_user: dict):
-    data = await request.json()
-    username = payload.get("username")
-    password = payload.get("password")
-    role_id = payload.get("role_id")
-    
+async def create_user((
+    current_user: dict,
+    username: str = Body(..., description="Nom d'utilisateur", example="jean123"),
+    password: str = Body(..., description="Mot de passe de l'utilisateur", example="Password123!"),
+    role_id: int = Body(..., description="ID du rôle attribué", example=2)
+):
+    """
+    Crée un nouvel utilisateur (admin, prestataire ou visiteur).
+    """    
     if not data or "username" not in data or "password" not in data or "role_id" not in data:
         raise HTTPException(status_code=400, detail="username, password et role_id requis")
     
@@ -123,44 +149,45 @@ async def create_user(request: Request, current_user: dict):
     if not user:
         raise HTTPException(status_code=409, detail="Impossible de créer l'utilisateur")
 
-    return JSONResponse(content={
-        "message": "Utilisateur créé avec succès", 
-        "user": user
-    }, status_code=201)
+    return JSONResponse(
+        status_code=201,
+        content={"success": True, "message": "Utilisateur créé", "user": user}
+    )
 
 # Cet router permet à un admin de modifier le mot de passe d'un utilisateur
-@admin_router.put("/users/{user_id}/password")
+@admin_router.put("/users/{user_id}/password", tags=["Utilisateurs"])
 @token_required
 @role_required("admin")
-async def update_user_password(user_id: int, request: Request, current_user: dict):
-    data = await request.json()
-    new_password = payload.get("new_password")
-    
-    if not data or "new_password" not in data:
-        raise HTTPException(status_code=400, detail="new_password requis")
-    
-    # Permet de vérifier que l'utilisateur existe
-    user = UserModel.get_by_id(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-    
-    success = UserModel.update_password(user_id, UserService.hash_password(new_password))
+async def update_user_password(
+    current_user: dict,
+    user_id: int = Path(..., description="ID de l'utilisateur dont le mot de passe doit être changé", example=10),
+    new_password: str = Body(..., description="Nouveau mot de passe", example="NouveauPass123!")
+):
+    """
+    Met à jour le mot de passe d’un utilisateur (par un administrateur).
+    """
+    result = UserService.update_password(user_id, old_password=None, new_password=new_password)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error", "Échec de la mise à jour du mot de passe"))
 
-    return {"message": "Mot de passe mis à jour avec succès"}
+    return {"success": True, "message": "Mot de passe mis à jour"}
 
 # Cet router permet à un admin de modifier un rôle d'un utilisateur
-@admin_router.put("/users/{user_id}/role")
+@admin_router.put("/users/{user_id}/role", tags=["Utilisateurs"])
 @token_required
 @role_required("admin")
-async def update_user_role(user_id: int, request: Request, current_user: dict):
-    data = await request.json()
-    role_id = data.get("role_id")
-    
-    if not data or "role_id" not in data:
-        raise HTTPException(status_code=400, detail="role_id requis")
+async def update_user_role(
+    current_user: dict,
+    user_id: int = Path(..., description="ID de l'utilisateur à modifier", example=6),
+    role_id: int = Body(..., description="Nouveau rôle ID à attribuer", example=3)
+):
+    """
+     Met à jour le rôle d’un utilisateur (sauf soi-même).
+    """
+    # Permet d'empêcher un admin de changer son propre rôle (sécurité)
+    if current_user["user_id"] == user_id:
+        raise HTTPException(status_code=403, detail="Impossible de modifier son propre rôle")
     
     # Permet de vérifier que l'utilisateur existe
     user = UserModel.get_by_id(user_id)
@@ -171,22 +198,25 @@ async def update_user_role(user_id: int, request: Request, current_user: dict):
     if not RoleModel.get_by_id(role_id):
         raise HTTPException(status_code=400, detail="Rôle invalide")
     
-    # Permet d'empêcher un admin de changer son propre rôle (sécurité)
-    if current_user["user_id"] == user_id:
-        raise HTTPException(status_code=403, detail="Impossible de modifier son propre rôle")
     
-    success = UserModel.update_role(user_id, role_id)
+    result = UserModel.update_role(user_id, role_id)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error", "Échec de la mise à jour du rôle"))
 
-    return {"message": "Rôle mis à jour avec succès"}
+    return {"success": True, "message": "Rôle utilisateur mis à jour"}
 
 # Cet router permet à un admin de supprimer un utilisateur
 @admin_router.delete("/users/{user_id}")
 @token_required
 @role_required("admin")
-async def delete_user(user_id: int, current_user: dict):
+async def delete_user(
+    current_user: dict,
+    user_id: int = Path(..., description="ID de l'utilisateur à supprimer", example=12)
+):
+    """
+    Supprime un utilisateur (impossible de se supprimer soi-même).
+    """
     if current_user["user_id"] == user_id:
         raise HTTPException(status_code=403, detail="Impossible de supprimer son propre compte")
     
@@ -195,9 +225,9 @@ async def delete_user(user_id: int, current_user: dict):
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
     
-    success = UserModel.delete(user_id)
+    result = UserModel.delete(user_id)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error", "Échec de la suppression (parcours ou sites associés)"))
 
-    return {"message": "Utilisateur supprimé avec succès"}
+    return {"success": True, "message": "Utilisateur supprimé"}

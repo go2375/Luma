@@ -1,94 +1,143 @@
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, HTTPException, Body, Path
+from fastapi.responses import JSONResponse
 from app.decorators import token_required, role_required
 from app.services.site_service import SiteService
 
-# Ces routes permettent aux prestataires de gérer leurs sites touristiques
-prestataire_bp = Blueprint('prestataire', __name__, url_prefix='/api/prestataire')
+# Cet router permet aux prestataires de gérer leurs sites touristiques
+prestataire_router = APIRouter(
+    prefix="/api/prestataire",
+    tags=["Prestataire"]
+)
 
-# Cette route permet à un prestataire de récupérer tous les sites appartenant à ce prestataire
-@prestataire_bp.route('/sites', methods=['GET'])
+# Cet router permet à un prestataire de récupérer tous les sites appartenant à ce prestataire
+@prestataire_router.get("/sites", tags=["Sites du prestataire"])
 @token_required
-@role_required(current_user)
-def get_my_sites(current_user):
-    sites = SiteService.get_sites_by_prestataire(current_user['user_id'])
-    return jsonify({'sites': sites}), 200
+@role_required("prestataire")
+async def get_my_sites(current_user: dict):
+    """
+    Récupère **tous les sites appartenant au prestataire connecté.**
+    """
+    sites = SiteService.get_sites_by_prestataire(current_user["user_id"])
+    return {"success": True, "sites": sites}
 
-# Cette route permet à un prestataire de récupérer un site spécifique choisi
-@prestataire_bp.route('/sites/<int:site_id>', methods=['GET'])
+# Cet router permet à un prestataire de récupérer un site spécifique choisi
+@prestataire_router.get("/sites/{site_id}", tags=["Sites du prestataire"])
 @token_required
-@role_required('prestataire')
-def get_site(current_user, site_id):
-    mes_sites = SiteService.get_sites_by_prestataire(current_user['user_id'])
+@role_required("prestataire")
+async def get_site(
+    site_id: int = Path(..., description="Identifiant unique du site", example=101),
+    current_user: dict = None
+):
+    """
+    Récupère les **détails d’un site spécifique** appartenant au prestataire connecté.
+    """
+    mes_sites = SiteService.get_sites_by_prestataire(current_user["user_id"])
     
     # Permet de vérifier que le site appartient au prestataire
-    site = next((s for s in mes_sites if s['site_id'] == site_id), None)
+    site = next((s for s in mes_sites if s["site_id"] == site_id), None)
 
     if not site:
-        return jsonify({'error': 'Site introuvable ou accès refusé'}), 404 
-    
-    return jsonify({'site': site}), 200
+        raise HTTPException(status_code=404, detail="Site introuvable ou accès refusé")
+    return {"success": True, "site": site}
 
-# Cette route permet à un prestataire de créer un nouveau site touristique
-@prestataire_bp.route('/sites', methods=['POST'])
+# Cet router permet à un prestataire de créer un nouveau site touristique
+@prestataire_router.post("/sites", tags=["Sites du prestataire"])
 @token_required
-@role_required('prestataire')
-def create_site(current_user):
-    data = request.get_json()
-    
-    if not data or 'nom_site' not in data or 'commune_id' not in data:
-        return jsonify({'error': 'nom_site et commune_id requis'}), 400
-    
+@role_required("prestataire")
+def create_site(
+    nom_site: str = Body(..., description="Nom du site à créer", example="Gîte de la Forêt"),
+    commune_id: int = Body(..., description="Identifiant de la commune du site", example=12),
+    type_site: str = Body(None, description="Type de site (ex: hébergement, musée...)", example="Hébergement"),
+    description: str = Body(None, description="Description du site", example="Gîte rural avec vue sur la forêt."),
+    latitude: float = Body(None, description="Latitude du site", example=48.8566),
+    longitude: float = Body(None, description="Longitude du site", example=2.3522),
+    current_user: dict = None
+):
+    """
+    Crée un **nouveau site** pour le prestataire connecté.
+    """
     # Permet de créer le site avec le prestataire_id de l'utilisateur connecté
     result = SiteService.create_site(
-        nom_site=data['nom_site'],
-        commune_id=data['commune_id'],
-        prestataire_id=current_user['user_id'],
-        type_site=data.get('type_site'),
-        description=data.get('description'),
-        latitude=data.get('latitude'),
-        longitude=data.get('longitude')
+        nom_site=data["nom_site"],
+        commune_id=data["commune_id"],
+        prestataire_id=current_user["user_id"],
+        type_site=data.get("type_site"),
+        description=data.get("description"),
+        latitude=data.get("latitude"),
+        longitude=data.get("longitude")
     )
     
     if not result['success']:
-        return jsonify({'error': result['error']}), 400
+        raise HTTPException(status_code=400, detail=result['error'])
+    
+    return JSONResponse(status_code=201, content={
+        "success": True,
+        "message": "Site créé avec succès",
+        "site_id": result['site_id']
+    })
 
-    return jsonify({
-        'message': 'Site créé avec succès',
-        'site_id': result['site_id']
-    }), 201
-
-# Cette route permet à un prestataire de modifier son site touristique
-@prestataire_bp.route('/sites/<int:site_id>', methods=['PUT'])
+# Cet router permet à un prestataire de modifier son site touristique
+@prestataire_router.put("/sites/{site_id}", tags=["Sites du prestataire"])
 @token_required
-@role_required('prestataire')
-def update_site(current_user, site_id):
-    data = request.get_json()
+@role_required("prestataire")
+async def update_site(
+    site_id: int = Path(..., description="Identifiant du site à modifier", example=55),
+    nom_site: str = Body(None, description="Nouveau nom du site", example="Maison du Lac"),
+    type_site: str = Body(None, description="Nouveau type du site", example="Restaurant"),
+    description: str = Body(None, description="Nouvelle description du site", example="Restaurant panoramique au bord du lac."),
+    latitude: float = Body(None, description="Nouvelle latitude", example=43.6045),
+    longitude: float = Body(None, description="Nouvelle longitude", example=1.4442),
+    commune_id: int = Body(None, description="Nouvel identifiant de commune", example=29),
+    current_user: dict = None
+):
+    """
+    Met à jour les **informations d’un site** appartenant au prestataire connecté.
+    """
+    data = {
+        "nom_site": nom_site,
+        "type_site": type_site,
+        "description": description,
+        "latitude": latitude,
+        "longitude": longitude,
+        "commune_id": commune_id
+    }
+    # Permet de filtrer les champs vides
+    data = {k: v for k, v in data.items() if v is not None}
     
     if not data:
-        return jsonify({'error': 'Données manquantes'}), 400
+        raise HTTPException(status_code=400, detail="Aucune donnée à mettre à jour fournie.")
     
     result = SiteService.update_site(
         site_id=site_id,
-        prestataire_id=current_user['user_id'],
+        prestataire_id=current_user["user_id"],
         **data
     )
     
-    if not result['success']:
-        return jsonify({'error': result['error']}), 403 if 'Accès refusé' in result['error'] else 400
+    if not result["success"]:
+        status_code = 403 if "Accès refusé" in result["error"] else 400
+        raise HTTPException(status_code=status_code, detail=result["error"])
     
-    return jsonify({'message': 'Site mis à jour avec succès'}), 200
-    
-# Cette route permet à un prestataire de supprimer son site touristique
-@prestataire_bp.route('/sites/<int:site_id>', methods=['DELETE'])
+    return {"success": True, "message": "Site mis à jour avec succès"}
+
+
+# Cet router permet à un prestataire de supprimer son site touristique
+@prestataire_router.delete("/sites/{site_id}", tags=["Sites du prestataire"])
 @token_required
-@role_required('prestataire')
-def delete_site(current_user, site_id):
+@role_required("prestataire")
+async def delete_site(
+    site_id: int = Path(..., description="Identifiant du site à supprimer", example=45),
+    current_user: dict = None
+):
+    """
+    Supprime un **site appartenant au prestataire connecté.**
+    """
     result = SiteService.delete_site(
         site_id=site_id,
-        prestataire_id=current_user['user_id']
+        prestataire_id=current_user["user_id"]
     )
 
-    if not result['success']:
-        return jsonify({'error': result['error']}), 403 if 'Accès refusé' in result['error'] else 400
-
-    return jsonify({'message': 'Site supprimé avec succès'}), 200
+    if not result["success"]:
+        status_code = 403 if "Accès refusé" in result["error"] else 400
+        raise HTTPException(status_code=status_code, detail=result["error")
+    
+    return {"success": True, "message": "Site supprimé avec succès"}

@@ -1,18 +1,27 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Body
 from app.models import RoleModel
 from app.services.user_service import UserService
 from app.decorators import token_required
 
 # Permet de créer un router API auth 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(
+    prefix="/api/auth",
+    tags=["Authentification"]
+)
 
 # On crée le router pour login pour authentifier un utilisateur et renvoyer un token JWT
-@router.post("/login")
-async def login(request: Request):
-    data = await request.json()
+@router.post("/login", tags=["Authentification"])
+async def loginlogin(
+    username: str = Body(..., description="Nom d'utilisateur", example="jean123"),
+    password: str = Body(..., description="Mot de passe", example="Password123!")
+):
+    """
+    Authentifie un utilisateur avec son nom d'utilisateur et son mot de passe.  
+    Retourne un **token JWT** si la connexion réussit.
+    """
     # Permet de vérifier que les champs requis sont bien présents
     if not data or "username" not in data or "password" not in data:
-        raise HTTPException(status_code=400, detail="Champs username' et 'password' requis.")
+        raise HTTPException(status_code=400, detail="'Champs username' et 'password' requis.")
 
     # On authentifie l'utilisateur
     auth_result = UserService.authenticate(data["username"], data["password"])
@@ -27,10 +36,15 @@ async def login(request: Request):
     }
 
 # On crée le router pour un enregistrement d'un utilisateur et on l'enregistre dans notre bdd SQLite
-@router.post("/register")
-async def register(data: dict):
-    data = await request.json()
-
+@router.post("/register", tags=["Authentification"])
+async def register(
+    username: str = Body(..., description="Nom d'utilisateur", example="newuser"),
+    password: str = Body(..., description="Mot de passe", example="Pass123!")
+):
+    """
+    Crée un **nouvel utilisateur** avec le rôle par défaut `visiteur`.  
+    Retourne un token JWT directement après l’inscription.
+    """
     if not data or "username" not in data or "password" not in data:
         raise HTTPException(status_code=400, detail="Champs 'username' et 'password' requis")
     # On récupère le role_id "visiteur" (rôle par défaut)
@@ -59,9 +73,13 @@ async def register(data: dict):
     }
 
 # On crée le router pour vérifier le token, que le token JWT est valide et non expiré
-@router.get("/verify")
+@router.get("/verify", tags=["Authentification"])
 @token_required
 async def verify_token(current_user: dict):
+    """
+    Vérifie la validité d’un **token JWT**.  
+    Retourne les informations de l’utilisateur si le token est encore valide.
+    """
     return {
         "message": "Token valide",
         "user": {
@@ -72,13 +90,19 @@ async def verify_token(current_user: dict):
     }
 
 # On crée le router pour permettre à un utilisateur connecté de changer son mot de passe
-@auth_bp.route("/change-password", methods=["PUT"])
+@auth_bp.route("/change-password", tags=["Authentification"])
 @token_required
-async def change_password(request: Request, current_user: dict):
-    data = await request.json()
-
-    if not data or "old_password" not in data or "new_password" not in data:
-        raise HTTPException(status_code=400, detail="Champ 'old_password' et 'new_password' requis.")
+async def change_password(
+    current_user: dict,
+    old_password: str = Body(..., description="Ancien mot de passe", example="OldPass123!"),
+    new_password: str = Body(..., description="Nouveau mot de passe", example="NewPass456!")
+):
+    """
+    Permet à un utilisateur **connecté** de changer son mot de passe.  
+    Vérifie l’ancien mot de passe avant de l’appliquer.
+    """
+    if not old_password or not new_password:
+        raise HTTPException(status_code=400, detail="Champs 'old_password' et 'new_password' requis.")
 
     result = UserService.update_password(
         user_id=current_user["user_id"],
