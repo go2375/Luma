@@ -5,7 +5,8 @@ class ParcoursService:
     @staticmethod
     # Permet de récupérer tous les parcours d'un utilisateur
     def get_user_parcours(user_id: int):
-        return ParcoursModel.get_by_user(user_id)
+        parcours = ParcoursModel.get_by_user(user_id)
+        return {"success": True, "parcours": parcours}
     
     @staticmethod
     # Permet de récupérer un parcours avec ses sites seulement pour l'utilisateur propriétaire correspondant
@@ -13,20 +14,20 @@ class ParcoursService:
         parcours = ParcoursModel.get_by_id(parcours_id)
         
         if not parcours:
-            return {'success': False, 'error': 'Parcours introuvable'}
+            return {"success": False, "error": "Parcours introuvable"}
         
         # On vérifie que le parcours appartient à l'utilisateur
-        if parcours['createur_id'] != user_id:
-            return {'success': False, 'error': 'Accès refusé - Ce parcours ne vous appartient pas'}
+        if parcours["createur_id"] != user_id:
+            return {"success": False, "error": "Accès refusé - Ce parcours ne vous appartient pas"}
         
-        return {'success': True, 'parcours': parcours}
+        return {"success": True, "parcours": parcours}
     
     @staticmethod
     # On créer un nouveau parcours
     def create_parcours(nom_parcours: str, createur_id: int, sites: list = None):
         # On valide la présence du nom du parcours
-        if not nom_parcours or len(nom_parcours.strip()) == 0:
-            return {'success': False, 'error': 'Le nom du parcours est requis'}
+        if not nom_parcours or not nom_parcours.strip():
+            return {"success": False, "error": "Le nom du parcours est requis"}
         
         try:
             parcours = ParcoursModel.create(
@@ -34,9 +35,9 @@ class ParcoursService:
                 createur_id=createur_id,
                 sites=sites
             )
-            return {'success': True, 'parcours_id': parcours['parcours_id']}
+            return {"success": True, "parcours": parcours}
         except Exception as e:
-            return {'success': False, 'error': f'Erreur lors de la création: {str(e)}'}
+            return {"success": False, "error": f"Erreur lors de la création: {str(e)}"}
     
     @staticmethod
     # Permet de modifier le nom d'un parcours
@@ -44,21 +45,19 @@ class ParcoursService:
         # On vérifie que le parcours existe et appartient à l'utilisateur
         parcours = ParcoursModel.get_by_id(parcours_id)
         if not parcours:
-            return {'success': False, 'error': 'Parcours introuvable'}
+            return {"success": False, "error": "Parcours introuvable"}
         
-        if parcours['createur_id'] != user_id:
-            return {'success': False, 'error': 'Accès refusé'}
+        if parcours["createur_id"] != user_id:
+            return {"success": False, "error": "Accès refusé"}
         
         # On valide la présence du nom du parcours
-        if not nom_parcours or len(nom_parcours.strip()) == 0:
-            return {'success': False, 'error': 'Le nom du parcours est requis'}
+        if not nom_parcours or not nom_parcours.strip():
+            return {"success": False, "error": "Le nom du parcours est requis"}
         
         # On effectue une mise à jour
         success = ParcoursModel.update(parcours_id, nom_parcours=nom_parcours.strip())
         
-        if success:
-            return {'success': True}
-        return {'success': False, 'error': 'Échec de la mise à jour'}
+        return {"success": success, "error": None if success else "Échec de la mise à jour"}
     
     @staticmethod
     # Permet de supprimer un parcours
@@ -66,17 +65,15 @@ class ParcoursService:
         # On vérifie que le parcours existe et appartient à l'utilisateur
         parcours = ParcoursModel.get_by_id(parcours_id)
         if not parcours:
-            return {'success': False, 'error': 'Parcours introuvable'}
+            return {"success": False, "error": "Parcours introuvable"}
         
-        if parcours['createur_id'] != user_id:
-            return {'success': False, 'error': 'Accès refusé'}
+        if parcours["createur_id"] != user_id:
+            return {"success": False, "error": "Accès refusé"}
         
         # On supprime un parcours
         success = ParcoursModel.delete(parcours_id)
         
-        if success:
-            return {'success': True}
-        return {'success': False, 'error': 'Échec de la suppression'}
+        return {"success": success, "error": None if success else "Échec de la suppression"}
     
     @staticmethod
     # Permet de retirer un site d'un parcours
@@ -84,13 +81,13 @@ class ParcoursService:
         # On vérifie que le parcours existe et appartient à l'utilisateur
         parcours = ParcoursModel.get_by_id(parcours_id)
         if not parcours:
-            return {'success': False, 'error': 'Parcours introuvable'}
+            return {"success": False, "error": "Parcours introuvable"}
         
-        if parcours['createur_id'] != user_id:
-            return {'success': False, 'error': 'Accès refusé'}
+        if parcours["createur_id"] != user_id:
+            return {"success": False, "error": "Accès refusé"}
         
         # On compte le nombre de sites avant suppression
-        nb_sites_precedent = len(parcours['sites'])
+        nb_sites_precedent = len(parcours.get("sites", []))
         
         # On retire le site
         success = ParcoursModel.remove_site(parcours_id, site_id)
@@ -98,6 +95,6 @@ class ParcoursService:
         if success:
             # On effectue une mise à jour le timestamp du parcours
             ParcoursModel.update(parcours_id, nb_sites_precedent=nb_sites_precedent)
-            return {'success': True}
+            return {"success": True}
         
-        return {'success': False, 'error': 'Site non trouvé dans ce parcours'}
+        return {"success": False, "error": "Site non trouvé dans ce parcours"}
