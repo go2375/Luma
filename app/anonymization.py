@@ -3,7 +3,14 @@ import random
 # Permet d'utiliser module de regex (expressions régulières) qui permet de vérifier si un texte (ici username) correspond à notre modèle choisi.
 import re
 import sqlite3
+from typing import Dict, List
+from datetime import datetime, timedelta
 from app.config import Config
+
+def get_db_connection():
+    conn = sqlite3.connect(Config.DATABASE_PATH)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 ## Permet d'anonymiser des usernames
 # Permet de vérifier si le username peut conduire à identifier une personne. On vérifie si username contient :
@@ -24,11 +31,10 @@ def generate_pseudonymous_username(user_id: int, prefix: str = "user") -> str:
     return f"{prefix}_{user_id}"
 
 # Permet d'anonymiser le username d'un utilisateur dans notre bdd
-def anonymize_username(user_id: int, prefix: str = "user") -> str:
+def anonymize_username(user_id: int, prefix: str = "user") -> dict[str, str]:
     new_username = generate_pseudonymous_username(user_id, prefix)
     
-    with sqlite3.connect(Config.DATABASE_PATH) as conn:
-        conn.execute("PRAGMA foreign_keys = ON")
+    with get_db_connection() as conn:
         cur = conn.cursor()
         cur.execute("""
             UPDATE Utilisateur
@@ -37,13 +43,13 @@ def anonymize_username(user_id: int, prefix: str = "user") -> str:
         """, (new_username, user_id))
         conn.commit()
     
-    return new_username
+    return {"user_id": user_id, "new_username": new_username}
 
 # Permet de parcourir tous les utilisateurs et anonymiser ceux avec un username identifiable.
 # Afin de réaliser un audit RGPD, cette fonction doit être exécutée par l'API lors du démarrage.
-def check_and_fix_all_usernames():
-    with sqlite3.connect(Config.DATABASE_PATH) as conn:
-        conn.execute("PRAGMA foreign_keys = ON")
+def check_and_fix_all_usernames() -> None:
+    anonymized_count = 0
+    with get_db_connection() as conn:
         cur = conn.cursor()
         cur.execute("""
             SELECT user_id, username, anonymized 
@@ -56,24 +62,15 @@ def check_and_fix_all_usernames():
         for user_id, username, already_anonymized in users:
             # Anonymiser seulement si username n'a pas été déjà anonymisé et s'il est identifiable
             if not already_anonymized and is_identifiable(username):
-                new_username = anonymize_username(user_id)
-                print(f"Username '{username}' anonymisé en '{new_username}'")
+                nanonymize_username(user_id)
                 anonymized_count += 1
         
-        if anonymized_count > 0:
-            print(f"{anonymized_count} username(s) anonymisé(s)")
-        else:
-            print("Tous les usernames sont RGPD conformes")
+    print(f"{anonymized_count} username(s) anonymisé(s)" if anonymized_count else "Tous les usernames sont RGPD conformes")
 
 # Permet de valider le nom d'utilisateur lors de l'inscription et de générer un pseudonyme si le nom d'utilisateur est identifiable. 
 def validate_and_fix_username(username: str, user_id: int = None) -> str:
     if is_identifiable(username):
-        if user_id:
-            return generate_pseudonymous_username(user_id)
-        else:
-            # Avant insertion en BDD, générer un pseudonyme temporaire
-            return f"user_{random.randint(10000, 99999)}"
-    
+        return generate_pseudonymous_username(user_id) if user_id else f"user_{random.randint(10000, 99999)}"
     return username
 
 
@@ -88,10 +85,9 @@ def anonymize_nom_site(site_row: dict) -> str:
     # Si site est résidentiel et il contient possiblement un nom de personne, ca permet de détecter
     # s'il y a majuscules multiples suggérant un nom et ensuite d'anonymiser ce nom de site en gardant
     # seulement le type de site et id de site 
-    if type_site in Config.RESIDENTIAL_SITE_TYPES:
-        if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", nom_site):
-            type_label = type_site.replace("_", " ").title()
-            return f"{type_label} #{site_id}"
+    if type_site in Config.RESIDENTIAL_SITE_TYPES and re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", nom_site):
+        type_label = type_site.replace("_", " ").title()
+        return f"{type_label} #{site_id}"
     
     return nom_site
 
@@ -140,13 +136,11 @@ def site_to_prestataire_dict(site_row: dict) -> dict:
 
 # Permet de supprimer définitivement les enregistrements marqués comme supprimés depuis plus de 30 jours.
 # Days définit la période de rétention avant suppression définitive à une durée 30 jours.
-def cleanup_old_deleted_records(days: int = 30):
-    from datetime import datetime, timedelta
+def cleanup_old_deleted_records(days: int = 30) -> None:
     
     cutoff_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     
-    with sqlite3.connect(Config.DATABASE_PATH) as conn:
-        conn.execute("PRAGMA foreign_keys = ON")
+    with get_db_connection() as conn:
         cur = conn.cursor()
         
         # Permet de supprimer définitivement les utilisateurs supprimés depuis > days
