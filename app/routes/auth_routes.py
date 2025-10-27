@@ -1,46 +1,44 @@
-from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, HTTPException, Request
 from app.models import RoleModel
 from app.services.user_service import UserService
+from app.decorators import token_required
 
-# Permet de créer un blueprint d’authentification
-# Ce blueprint regroupe toutes les routes liées à la connexion et l'inscription d'un utilisateur
-auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+# Permet de créer un router API auth 
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-# On crée la route pour login pour authentifier un utilisateur et renvoyer un token JWT
-@auth_bp.route("/login", methods=["POST"])
-def login():
-    data = request.get_json()
-
+# On crée le router pour login pour authentifier un utilisateur et renvoyer un token JWT
+@router.post("/login")
+async def login(request: Request):
+    data = await request.json()
     # Permet de vérifier que les champs requis sont bien présents
     if not data or "username" not in data or "password" not in data:
-        return jsonify({"error": "Champs 'username' et 'password' requis."}), 400
+        raise HTTPException(status_code=400, detail="Champs 'username' et 'password' requis.")
 
     # On authentifie l'utilisateur
     auth_result = UserService.authenticate(data['username'], data['password'])
     
     if not auth_result['success']:
-        return jsonify({'error': auth_result['error']}), 401
+        raise HTTPException(status_code=401, detail=auth_result['error'])
     
-    return jsonify({
+    return {
         "message": "Connexion réussie",
-        "token": token,
+        "token": auth_result['token'],
         "user": auth_result['user']
-    }), 200
+    }
 
-# On crée la route pour un enregistrement d'un utilisateur et on l'enregistre dans notre bdd SQLite
-@auth_bp.route("/register", methods=["POST"])
-def register():
-    data = request.get_json()
+# On crée le router pour un enregistrement d'un utilisateur et on l'enregistre dans notre bdd SQLite
+@router.post("/register")
+async def register(data: dict):
+    data = await request.json()
 
     if not data or "username" not in data or "password" not in data:
-        return jsonify({"error": "Champs 'username' et 'password' requis."}), 400
-
+        raise HTTPException(status_code=400, detail="Champs 'username' et 'password' requis")
     # On récupère le role_id "visiteur" (rôle par défaut)
     roles = RoleModel.get_all()
     visiteur_role = next((r for r in roles if r['nom_role'] == 'visiteur'), None)
     
     if not visiteur_role:
-        return jsonify({'error': 'Rôle visiteur introuvable dans la base'}), 500
+        raise HTTPException(status_code=500, detail="Rôle visiteur introuvable")
     
     # On créer l'utilisateur
     user = UserService.create_user(
@@ -50,51 +48,37 @@ def register():
     )
     
     if not user:
-        return jsonify({'error': 'Ce username existe déjà ou le rôle est invalide'}), 409
+        raise HTTPException(status_code=409, detail="Username existant ou rôle invalide")
          
     # On authentifie immédiatement après inscription
     auth_result = UserService.authenticate(data['username'], data['password'])
-    
-    if not auth_result['success']:
-        return jsonify({'error': 'Erreur lors de la génération du token'}), 500
-    
-    # On vérifier si le username a été modifié pour la conformité RGPD
-    warning = None
-    if auth_result['user']['username'] != data['username']:
-        warning = "Votre username a été modifié pour respecter la politique de confidentialité"
-    
-    response = {
+    return {
         'message': 'Inscription réussie',
         'token': auth_result['token'],
         'user': auth_result['user']
     }
-    
-    if warning:
-        response['warning'] = warning
-    
-    return jsonify(response), 201
 
-# On crée la route pour vérifier le token, que le token JWT est valide et non expiré
-@auth_bp.route("/verify", methods=["GET"])
+# On crée le router pour vérifier le token, que le token JWT est valide et non expiré
+@router.get("/verify")
 @token_required
-def verify_token(current_user):
-    return jsonify({
+async def verify_token(current_user: dict):
+    return {
         "message": "Token valide",
         "user": {
             'user_id': current_user['user_id'],
             'username': current_user['username'],
             'role': current_user['role']
         }
-    }), 200
+    }
 
-# On crée la route pour permettre à un utilisateur connecté de changer son mot de passe
+# On crée le router pour permettre à un utilisateur connecté de changer son mot de passe
 @auth_bp.route("/change-password", methods=["PUT"])
 @token_required
-def change_password(current_user):
-    data = request.get_json()
+async def change_password(request: Request, current_user: dict):
+    data = await request.json()
 
     if not data or "old_password" not in data or "new_password" not in data:
-        return jsonify({"error": "Champ 'old_password' et 'new_password' requis."}), 400
+        raise HTTPException(status_code=400, detail="Champ 'old_password' et 'new_password' requis.")
 
     result = UserService.update_password(
         user_id=current_user["user_id"],
@@ -103,6 +87,6 @@ def change_password(current_user):
     )
 
     if not result['success']:
-        return jsonify({"error": result['error']}), 401
+        raise HTTPException(status_code=401, detail=result['error'])
 
-    return jsonify({"message": "Mot de passe mis à jour avec succès."}), 200
+    return {"message": "Mot de passe mis à jour avec succès."}

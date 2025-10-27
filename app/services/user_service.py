@@ -1,6 +1,6 @@
 from app.models import UserModel, RoleModel
 from app.auth import AuthService
-from app.anonymization_utils import validate_and_fix_username, anonymize_username
+from app.anonymization import validate_and_fix_username, anonymize_username
 
 # Permet de créer un service de gestion des utilisateurs
 class UserService:
