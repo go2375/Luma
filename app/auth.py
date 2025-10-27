@@ -4,10 +4,6 @@ import jwt
 import bcrypt
 # Permet de gérer les dates et les durées pour l’expiration des tokens
 from datetime import datetime, timedelta
-# Permet de garder les métadonnées d'une fonction décorée 
-from functools import wraps
-# Permet de manipuler les requêtes HTTP et envoyer des réponses JSON
-from flask import request, jsonify
 from app.config import Config
 
 class AuthService:
