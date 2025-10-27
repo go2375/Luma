@@ -10,7 +10,7 @@ def token_required(f):
     async def wrapper(*args, request: Request, **kwargs):
         
         # Permet de récupérer le token depuis les headers Authorization
-        auth_header = request.headers.get('Authorization')
+        auth_header = request.headers.get("Authorization")
         if not auth_header:
             raise HTTPException(status_code=401, detail="Token manquant. Authentification requise.")
         
@@ -19,15 +19,15 @@ def token_required(f):
             raise HTTPException(status_code=401, detail="Format de token invalide. Utilisez: Bearer <token>")
 
         token = parts[1]
-        
+
         # On vérifie le token
         result = AuthService.decode_token(token)
         # Si pas de token trouvé un message de notification s'affiche
-        if not result['success']:
-            raise HTTPException(status_code=401, detail=result['error'])
+        if not result["success"]:
+            raise HTTPException(status_code=401, detail=result["error"])
         
         # Permet de passer les données utilisateur à la fonction protégée
-        return await f(*args, current_user=result['data'], request=request, **kwargs)
+        return await f(*args, current_user=result["data"], request=request, **kwargs)
  
     return wrapper
 
@@ -37,14 +37,14 @@ def role_required(*allowed_roles):
     def decorator(f):
         @wraps(f)
         async def wrapper(*args, current_user: dict, **kwargs):
-            user_role = current_user.get('role')
+            user_role = current_user.get("role")
             if user_role not in allowed_roles:
                 raise HTTPException(
                     status_code=403,
                     detail={
-                    'error': 'Accès refusé - Permissions insuffisantes',
-                    'roles_autorises': list(allowed_roles),
-                    'votre_role': user_role
+                    "error": "Accès refusé - Permissions insuffisantes",
+                    "roles_autorises": list(allowed_roles),
+                    "votre_role": user_role
                     }
                 )
             return await f(*args, current_user=current_user, **kwargs)
