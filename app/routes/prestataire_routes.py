@@ -4,13 +4,13 @@ from app.decorators import token_required, role_required
 from app.services.site_service import SiteService
 
 # Cet router permet aux prestataires de gérer leurs sites touristiques
-prestataire_router = APIRouter(
+router = APIRouter(
     prefix="/api/prestataire",
     tags=["Prestataire"]
 )
 
 # Cet router permet à un prestataire de récupérer tous les sites appartenant à ce prestataire
-@prestataire_router.get("/sites", tags=["Sites du prestataire"])
+@router.get("/sites", tags=["Sites du prestataire"])
 @token_required
 @role_required("prestataire")
 async def get_my_sites(current_user: dict):
@@ -21,7 +21,7 @@ async def get_my_sites(current_user: dict):
     return {"success": True, "sites": sites}
 
 # Cet router permet à un prestataire de récupérer un site spécifique choisi
-@prestataire_router.get("/sites/{site_id}", tags=["Sites du prestataire"])
+@router.get("/sites/{site_id}", tags=["Sites du prestataire"])
 @token_required
 @role_required("prestataire")
 async def get_site(
@@ -41,7 +41,7 @@ async def get_site(
     return {"success": True, "site": site}
 
 # Cet router permet à un prestataire de créer un nouveau site touristique
-@prestataire_router.post("/sites", tags=["Sites du prestataire"])
+@router.post("/sites", tags=["Sites du prestataire"])
 @token_required
 @role_required("prestataire")
 def create_site(
@@ -77,7 +77,7 @@ def create_site(
     })
 
 # Cet router permet à un prestataire de modifier son site touristique
-@prestataire_router.put("/sites/{site_id}", tags=["Sites du prestataire"])
+@router.put("/sites/{site_id}", tags=["Sites du prestataire"])
 @token_required
 @role_required("prestataire")
 async def update_site(
@@ -121,7 +121,7 @@ async def update_site(
 
 
 # Cet router permet à un prestataire de supprimer son site touristique
-@prestataire_router.delete("/sites/{site_id}", tags=["Sites du prestataire"])
+@router.delete("/sites/{site_id}", tags=["Sites du prestataire"])
 @token_required
 @role_required("prestataire")
 async def delete_site(
@@ -138,6 +138,6 @@ async def delete_site(
 
     if not result["success"]:
         status_code = 403 if "Accès refusé" in result["error"] else 400
-        raise HTTPException(status_code=status_code, detail=result["error")
+        raise HTTPException(status_code=status_code, detail=result["error"])
     
     return {"success": True, "message": "Site supprimé avec succès"}

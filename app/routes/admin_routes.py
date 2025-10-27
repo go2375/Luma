@@ -6,14 +6,14 @@ from app.services.user_service import UserService
 from app.models import RoleModel, UserModel
 
 ### Ce router permet à un admin de gérer des rôles et des comptes des utilisateurs
-admin_router = APIRouter(
+router = APIRouter(
     prefix="/api/admin",
     tags=["Admin"]
 )
 
 ## Ces routers permettent à un admin de gérer des rôles des utilisateurs
 # Cet router permet à un admin de récupérer tous les rôles
-@admin_router.get("/roles")
+@router.get("/roles")
 @token_required
 @role_required("admin")
 async def get_roles(current_user: dict):
@@ -24,7 +24,7 @@ async def get_roles(current_user: dict):
     return {"roles": roles}
 
 # Cet router permet à un admin de créer un nouveau rôle
-@admin_router.post("/roles")
+@router.post("/roles")
 @token_required
 @role_required("admin")
 async def create_role(
@@ -43,13 +43,13 @@ async def create_role(
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result.get("error", "Échec de la création"))
     
-    rreturn JSONResponse(
+    return JSONResponse(
         status_code=201,
         content={"success": True, "message": "Rôle créé", "role": result["role"]}
     )
 
 # Cet router permet à un admin de modifier un rôle existant
-@admin_router.put("/roles/{role_id}")
+@router.put("/roles/{role_id}")
 @token_required
 @role_required("admin")
 async def update_role(
@@ -72,7 +72,7 @@ async def update_role(
     return {"message": "Rôle mis à jour avec succès"}
 
 # Cet router permet à un admin de supprimer un rôle existant
-@admin_router.delete("/roles/{role_id}", tags=["Rôles"])
+@router.delete("/roles/{role_id}", tags=["Rôles"])
 @token_required
 @role_required("admin")
 async def delete_role(
@@ -91,7 +91,7 @@ async def delete_role(
 
 ## Ces routers permettent à un admin de gérer des comptes des utilisateurs
 # Cet router permet à un admin de récupérer tous les utilisateurs
-@admin_router.get("/users")
+@router.get("/users")
 @token_required
 @role_required("admin")
 async def get_users(current_user: dict):
@@ -102,7 +102,7 @@ async def get_users(current_user: dict):
     return {"users": users}
 
 # Cet router permet à un admin de récupérer les données d'un utilisateur spécifique
-@admin_router.get("/users/{user_id}")
+@router.get("/users/{user_id}")
 @token_required
 @role_required("admin")
 async def get_user(
@@ -120,10 +120,10 @@ async def get_user(
     return {"success": True, "user": user}
 
 # Cet router permet à un admin de créer un nouvel utilisateur
-@admin_router.post("/users", tags=["Utilisateurs"])
+@router.post("/users", tags=["Utilisateurs"])
 @token_required
 @role_required("admin")
-async def create_user((
+async def create_user(
     current_user: dict,
     username: str = Body(..., description="Nom d'utilisateur", example="jean123"),
     password: str = Body(..., description="Mot de passe de l'utilisateur", example="Password123!"),
@@ -155,7 +155,7 @@ async def create_user((
     )
 
 # Cet router permet à un admin de modifier le mot de passe d'un utilisateur
-@admin_router.put("/users/{user_id}/password", tags=["Utilisateurs"])
+@router.put("/users/{user_id}/password", tags=["Utilisateurs"])
 @token_required
 @role_required("admin")
 async def update_user_password(
@@ -174,7 +174,7 @@ async def update_user_password(
     return {"success": True, "message": "Mot de passe mis à jour"}
 
 # Cet router permet à un admin de modifier un rôle d'un utilisateur
-@admin_router.put("/users/{user_id}/role", tags=["Utilisateurs"])
+@router.put("/users/{user_id}/role", tags=["Utilisateurs"])
 @token_required
 @role_required("admin")
 async def update_user_role(
@@ -207,7 +207,7 @@ async def update_user_role(
     return {"success": True, "message": "Rôle utilisateur mis à jour"}
 
 # Cet router permet à un admin de supprimer un utilisateur
-@admin_router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}")
 @token_required
 @role_required("admin")
 async def delete_user(

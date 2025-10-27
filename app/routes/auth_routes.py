@@ -90,7 +90,7 @@ async def verify_token(current_user: dict):
     }
 
 # On crée le router pour permettre à un utilisateur connecté de changer son mot de passe
-@auth_bp.route("/change-password", tags=["Authentification"])
+@router.put("/change-password", tags=["Authentification"])
 @token_required
 async def change_password(
     current_user: dict,

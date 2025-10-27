@@ -6,15 +6,14 @@ from app.services.user_service import UserService
 from app.services.parcours_service import ParcoursService
 from app.models import CommuneModel, DepartmentModel
 
-# On crée le ruuter
-public_router = APIRouter(
+# On crée le router
+router = APIRouter(
     prefix="/api",
     tags=["Public"]
 )
 
 ## Permet de créer des routers publiques qui ne nécessitent pas d'authentification et permettent de récupérer les données anonymisées sur les sites touristiques
-
-@public_router.get("/sites", tags=["Sites publics"])
+@router.get("/sites", tags=["Sites publics"])
 # Permet de récupérer les données anonymisées sur tous les sites touristiques
 async def get_all_sites():
     """
@@ -24,9 +23,9 @@ async def get_all_sites():
     return {"success": True, "sites": sites}
 
 
-@public_router.get("/sites/{site_id}", tags=["Sites publics"])
+@router.get("/sites/{site_id}", tags=["Sites publics"])
 # Permet de récupérer les données anonymisées sur un site spécifique
-async def get_site(site_id)(
+async def get_site(
     site_id: int = Path(..., description="Identifiant unique du site", example=12)
 ):
     """
@@ -39,7 +38,7 @@ async def get_site(site_id)(
     
     return {"success": True, "site": site}
 
-@public_router.get("/communes", tags=["Référentiels"])
+@router.get("/communes", tags=["Référentiels"])
 # Permet de récupérer toutes les communes
 async def get_all_communes():
     """
@@ -49,7 +48,7 @@ async def get_all_communes():
     return {"success": True, "communes": communes}
 
 
-@public_router.get("/departments", tags=["Référentiels"])
+@router.get("/departments", tags=["Référentiels"])
 # Permet de récupérer tous les départements
 async def get_all_departments():
     """
@@ -60,7 +59,7 @@ async def get_all_departments():
 
 
 # Permet de gérer des parcours qui nécessitent une authentification et permet aux utilisateurs authentifiés d'accéder à leurs parcours
-@public_router.get("/parcours", tags=["Parcours"])
+@router.get("/parcours", tags=["Parcours"])
 @token_required
 # Permet de récupérer tous les parcours d'un utilisateur authentifié
 async def get_my_parcours(current_user: dict):
@@ -71,7 +70,7 @@ async def get_my_parcours(current_user: dict):
     return {"success": True, "parcours": parcours_list}
 
 
-@public_router.get("/parcours/{parcours_id}", tags=["Parcours"])
+@router.get("/parcours/{parcours_id}", tags=["Parcours"])
 @token_required
 # Permet à un utilisateur authentifié de récupérer un parcours avec tous les sites
 def get_parcours_detail(
@@ -88,7 +87,7 @@ def get_parcours_detail(
         raise HTTPException(status_code=status_code, detail=result["error"])
     return {"success": True, "parcours": result["parcours"]}
 
-@public_router.post("/parcours", tags=["Parcours"])
+@router.post("/parcours", tags=["Parcours"])
 @token_required
 # Permet de créer un nouveau parcours
 def create_parcours(current_user)(
@@ -118,7 +117,7 @@ def create_parcours(current_user)(
         "parcours_id": result["parcours_id"]
     })
 
-@public_router.put("/parcours/{parcours_id}", tags=["Parcours"])
+@router.put("/parcours/{parcours_id}", tags=["Parcours"])
 @token_required
 # Permet de modifier le nom d'un parcours
 async def update_parcours(
@@ -145,7 +144,7 @@ async def update_parcours(
     
     return {"success": True, "message": "Parcours mis à jour avec succès"}
 
-@public_router.delete("/parcours/{parcours_id}", tags=["Parcours"])
+@router.delete("/parcours/{parcours_id}", tags=["Parcours"])
 @token_required
 # Permet de supprimer un parcours
 async def delete_parcours(
@@ -165,7 +164,7 @@ async def delete_parcours(
         raise HTTPException(status_code=status_code, detail=result["error"])
     return {"success": True, "message": "Parcours supprimé avec succès"}
 
-@public_router.delete("/parcours/{parcours_id}/sites/{site_id}", tags=["Parcours"])
+@router.delete("/parcours/{parcours_id}/sites/{site_id}", tags=["Parcours"])
 @token_required
 # Permet de retirer un site d'un parcours
 def remove_site_from_parcours(
@@ -189,7 +188,7 @@ def remove_site_from_parcours(
 
 ## Permet de gérer les comptes des utilisateurs
 
-@public_router.get("/me", tags=["Profil utilisateur"])
+@router.get("/me", tags=["Profil utilisateur"])
 @token_required
 # Permet à un utilisateur de récupérer son profil
 async def get_my_profile(current_user: dict):
@@ -203,7 +202,7 @@ async def get_my_profile(current_user: dict):
     return {"success": True, "user": user}
 
 
-@public_router.put("/me/password", tags=["Profil utilisateur"])
+@router.put("/me/password", tags=["Profil utilisateur"])
 @token_required
 # Permet à un utilisateur de modifier son mot de passe
 async def update_my_password(
@@ -229,7 +228,7 @@ async def update_my_password(
     return {"success": True, "message": "Mot de passe mis à jour avec succès"}
 
 
-@public_router.delete("/me", tags=["Profil utilisateur"])
+@router.delete("/me", tags=["Profil utilisateur"])
 @token_required
 # Permet d'anonymiser ou marquer comme supprimé un compte par un utilisateur
 async def delete_my_account(
