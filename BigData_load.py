@@ -12,12 +12,12 @@ COLLECTION_NAME = "Points"
 # Je définis mon chemin pour récuperer mes données Big Data
 input_csv_path = os.path.join(os.path.dirname(__file__), "./db_source/BigData_source.csv")
 
-# --- Connexion à MongoDB ---
+# Permet de gérer ma connexion à MongoDB
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 
-# --- Lecture CSV et insertion directe dans MongoDB ---
+# Permet de lire mon CSV source et d'insérer les données dans ma base de données MongoDB
 count = 0
 with open(input_csv_path, newline='', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
@@ -26,11 +26,9 @@ with open(input_csv_path, newline='', encoding='utf-8') as csvfile:
             "nom_site": row["Nom_du_POI"],
             "type_site": row.get("Categories_de_POI"),
             "description": row.get("Description"),
-            "localisation": {
-                "latitude": float(row["Latitude"]) if row.get("Latitude") else None,
-                "longitude": float(row["Longitude"]) if row.get("Longitude") else None
-            },
-            "nom_commune": row.get("Code_postal_et_commune"),
+            "latitude": float(row["Latitude"]) if row.get("Latitude") else None,
+            "longitude": float(row["Longitude"]) if row.get("Longitude") else None,
+            "code_postal_et_nom_commune": row.get("Code_postal_et_commune"),
             "updated_at": (
                 datetime.strptime(row["Date_de_mise_a_jour"], "%Y-%m-%d")
                 .astimezone(timezone.utc)

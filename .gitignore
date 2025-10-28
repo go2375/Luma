@@ -3,6 +3,7 @@
 .env
 **/__pycache__/
 db/
+db_source/
 *.lock
 *.wt
 *.ns
