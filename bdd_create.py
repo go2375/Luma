@@ -81,7 +81,7 @@ cur.executescript("""
     CREATE TABLE IF NOT EXISTS Department (
         department_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom_department TEXT NOT NULL UNIQUE,
-        code_department INTEGER NOT NULL UNIQUE
+        nom_department_breton TEXT
     );
 
     CREATE TABLE IF NOT EXISTS Commune (
