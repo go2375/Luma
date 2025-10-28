@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.models import APIKey, APIKeyIn, SecuritySchemeType
+from fastapi.openapi.utils import get_openapi
 from app.routes.auth_routes import router as auth_router
 from app.routes.admin_routes import router as admin_router
 from app.routes.prestataire_routes import router as prestataire_router
@@ -35,4 +37,35 @@ app.include_router(public_router)
 # On gère Health Check
 @app.get("/api/health", tags=["Default"])
 def health_check():
+    """Vérifie l’état de santé de l’API."""
     return {"status": "ok", "message": "API Luméa fonctionne correctement"}
+
+# Permet de  configurer avec bearer token
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    # On Ajoute le schéma d’authentification Bearer
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Token JWT à inclure dans le header Authorization : Bearer <token>",
+        }
+    }
+
+    # On applique automatiquement la sécurité aux routes protégées
+    openapi_schema["security"] = [{"BearerAuth": []}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+# On applique notre configuration personnalisée
+app.openapi = custom_openapi
