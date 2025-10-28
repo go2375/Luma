@@ -25,9 +25,9 @@ ORDER BY d.department_id, c.nom_commune
 
 df_SQLite = pd.read_sql_query(query, conn)
 
-# Fermeture de la connexion
+# Permet de fermer la connexion
 conn.close()
 
-# Affichage rapide
+# Permet une affichage rapide
 print(df_SQLite.head())
 print(df_SQLite.info())
