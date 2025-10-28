@@ -1,5 +1,14 @@
+data sources:
+https://data.bretagne.bzh/explore/dataset/bretagne-activites-sportives-et-culturelles/export/?utm_source=chatgpt.com&q=Bretagne - CSV
+https://data.bretagne.bzh/explore/dataset/communes-france/api/?disjunctive.reg_name&disjunctive.dep_name&disjunctive.arrdep_name&disjunctive.ze2020_name&disjunctive.epci_name&disjunctive.ept_name&disjunctive.com_name&disjunctive.ze2010_name&disjunctive.com_is_mountain_area&disjunctive.bv2022_name&sort=year - SQLite
+https://data.bretagne.bzh/explore/dataset/petites-cites-de-caractere-en-bretagne/api/ - API
+https://www.geobreizh.bzh/nom-des-villes-bretonnes-en-breton/ - Webscraping
+https://static.data.gouv.fr/resources/datatourisme-la-base-nationale-des-donnees-publiques-dinformation-touristique-en-open-data/20251014-025215/datatourisme-reg-bre.csv - BigData
+
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 
 ton_token_jwt_ici
 
 docker-compose up -d
+
+docker exec -it my_mongo mongosh -u isen -p isen
