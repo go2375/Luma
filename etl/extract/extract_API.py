@@ -18,7 +18,7 @@ for item in results:
     fields = item.get('fields', item)  
     extracted.append({
         'code_insee': fields.get('code_insee', ''),
-        'nom': fields.get('nom', '')
+        'nom_commune': fields.get('nom', '')
     })
 
 # Permet de convertir des données des communes en df_API
@@ -27,3 +27,6 @@ df_API = pd.DataFrame(extracted)
 # Permet une affichage rapide de mon df_API
 print(df_API.head())
 print(df_API)
+
+# On créer un df_API_preparer pour transform
+df_API_copy = df_API.copy()
