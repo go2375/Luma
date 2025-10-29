@@ -79,7 +79,7 @@ def EDA_data_API(df, df_name="df_API_copy"):
     else:
         print("\n Aucune valeur manquante détectée")
     
-    # # On effectue une étape 3: Détection et suppression des doublons
+    # On effectue une étape 3: Détection et suppression des doublons
     dupl = df_copy.duplicated().sum()
     print(f"\n Doublons détectés : {dupl}")
     
@@ -98,7 +98,7 @@ def EDA_data_API(df, df_name="df_API_copy"):
         df_copy = df_copy.drop_duplicates(subset=['code_insee'], keep='first')
         print(f"✓ Doublons supprimés (conservation de la première occurrence)")
     
-    # # On effectue une étape 4: Analyse des valeurs uniques
+    # On effectue une étape 4: Analyse des valeurs uniques
     print("\n Analyse des valeurs uniques :")
     for col in df_copy.columns:
         n_unique = df_copy[col].nunique()
@@ -125,8 +125,7 @@ def EDA_data_API(df, df_name="df_API_copy"):
         print("\n  Exemples de noms normalisés :")
         print(df_copy['nom_commune'].head(10).tolist())
     
-    # On effectue une étape 6 : Résumé final
-    
+    # On effectue une étape finale : Résumé final
     print("\n" + "=" * 80)
     print(f" Préparation terminée pour : {df_name}")
     print("=" * 80)
@@ -149,8 +148,8 @@ if __name__ == "__main__":
     print("\n" + "=" * 80)
     print("\nPremières lignes :")
     print(df_result_API.head(10))
-    
-    print(" Apercu final aprèse EDA")
+
+    print(" Aperçu final après EDA")
     print(df_result_API)  
     
     print("\nInformations complètes :")
