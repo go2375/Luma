@@ -11,7 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "e
 # On importe le df_API_copy depuis extract_API
 from extract_API import df_API_copy
 
-# On créer une fonction principale EDA pour df_API
+# On crée une fonction principale EDA pour df_API
 def EDA_data_API(df, df_name="df_API_copy"):
     """
     On effectue une Analyse Exploratoire des Données (EDA) sur le df_API
@@ -23,6 +23,7 @@ def EDA_data_API(df, df_name="df_API_copy"):
     4. Analyse des valeurs uniques
     5. Création et validation de la colonne label_cite_caractere
     6. Normalisation des noms de communes
+    7. Normalisation des types
     
     """
     # On créer une deuxième copie profonde pour éviter les modifications du df original
@@ -124,6 +125,18 @@ def EDA_data_API(df, df_name="df_API_copy"):
         # On affiche quelques exemples
         print("\n  Exemples de noms normalisés :")
         print(df_copy['nom_commune'].head(10).tolist())
+
+    # On effectue une étape 7 : Normalisation des types
+    # On convertit code_insee et nom_commune en string
+    df_copy['code_insee'] = df_copy['code_insee'].astype(str)
+    df_copy['nom_commune'] = df_copy['nom_commune'].astype(str)
+
+    # On convertit label_cite_caractere en booléen
+    # On considère 0 = False, tout autre valeur = True
+    df_copy['label_cite_caractere'] = df_copy['label_cite_caractere'].astype(bool)
+
+    # On vérifie
+    print(df_copy.dtypes)
     
     # On effectue une étape finale : Résumé final
     print("\n" + "=" * 80)

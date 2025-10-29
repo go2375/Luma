@@ -8,10 +8,10 @@ import numpy as np
 # On ajoute le dossier extract au path pour importer les données
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "extract")))
 
-# On importe le df_SQLite_copy depuis ton extract_SQLite
+# On importe le df_SQLite_copy depuis mon extract_SQLite
 from extract_SQLite import df_SQLite_copy
 
-# # On créer une fonction principale EDA pour df_SQLite
+# On crée une fonction principale EDA pour df_SQLite
 def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
     """
     Analyse Exploratoire des Données (EDA) pour df_SQLite
@@ -23,6 +23,7 @@ def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
     4. Analyse des valeurs uniques
     5. Suppression de la colonne code_department (non nécessaire pour la bdd finale)
     6. Normalisation des noms de communes et de départements
+    7. Normalisation des types
     """
     # On travaille sur une deuxième copie pour ne pas modifier l'original
     df_copy = df.copy(deep=True)
@@ -125,6 +126,13 @@ def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
         print("  ✓ Espaces superflus supprimés")
         print("\n  Exemples de noms normalisés :")
         print(df_copy['nom_department'].head(10).tolist())
+
+
+    # On effectue une étape 7 : Normalisation des noms de communes, départements et codes INSEE
+    df_copy['nom_commune'] = df_copy['nom_commune'].str.strip()
+    df_copy['nom_department'] = df_copy['nom_department'].str.strip()
+    df_copy['code_insee'] = df_copy['code_insee'].str.strip()    
+    print("\n✓ Normalisation des noms de communes, départements et codes INSEE terminée")
 
     # On effectue une étape finale : Résumé final
     print("\n" + "=" * 80)
