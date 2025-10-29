@@ -31,3 +31,6 @@ conn.close()
 # Permet une affichage rapide
 print(df_SQLite.head())
 print(df_SQLite.info())
+
+# On créer un df_SQLite_copy pour éviter les modifications du df original pour transform
+df_SQLite_copy = df_SQLite.copy(deep=True)

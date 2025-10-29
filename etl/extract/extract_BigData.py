@@ -23,3 +23,6 @@ df_BigData = pd.DataFrame(data)
 print(df_BigData.columns)
 pd.set_option('display.max_columns', None)
 print(df_BigData.head())
+
+# On créer un df_BigData_copy pour éviter les modifications du df original pour transform
+df_BigData_copy = df_BigData.copy(deep=True)

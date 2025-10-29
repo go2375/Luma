@@ -29,3 +29,6 @@ print(df_CSV.head())
 # Permet de voir les noms de colonnes et types de données en mon df_CSV
 print("\nColonnes et types :")
 print(df_CSV.info())
+
+# On créer un df_CSV_copy pour éviter les modifications du df original pour transform
+df_CSV_copy = df_CSV.copy(deep=True)

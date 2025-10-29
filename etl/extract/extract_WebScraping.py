@@ -53,3 +53,6 @@ pd.set_option('display.max_rows', 10)
 print(df_WebScrap.head(10))
 print(df_WebScrap)
 print(f"Total lignes scrappées : {len(df_WebScrap)}")
+
+# On créer un df_WebScrap_copy pour éviter les modifications du df original pour transform
+df_WebScrap_copy = df_WebScrap.copy(deep=True)

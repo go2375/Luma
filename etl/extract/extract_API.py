@@ -28,5 +28,5 @@ df_API = pd.DataFrame(extracted)
 print(df_API.head())
 print(df_API)
 
-# On créer un df_API_preparer pour transform
-df_API_copy = df_API.copy()
+# On créer un df_API_copy pour éviter les modifications du df original pour transform
+df_API_copy = df_API.copy(deep=True)
