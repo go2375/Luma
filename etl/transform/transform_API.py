@@ -14,8 +14,7 @@ from extract_API import df_API_copy
 # On crée une fonction principale EDA pour df_API
 def EDA_data_API(df, df_name="df_API_copy"):
     """
-    On effectue une Analyse Exploratoire des Données (EDA) sur le df_API
-    
+    Analyse Exploratoire des Données (EDA) pour le df_API
     Étapes :
     1. Exploration initiale (dimensions, types, aperçu)
     2. Détection des valeurs manquantes
@@ -24,7 +23,6 @@ def EDA_data_API(df, df_name="df_API_copy"):
     5. Création et validation de la colonne label_cite_caractere
     6. Normalisation des noms de communes
     7. Normalisation des types
-    
     """
     # On créer une deuxième copie profonde pour éviter les modifications du df original
     df_copy = df.copy(deep=True)

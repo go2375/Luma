@@ -15,7 +15,6 @@ from extract_SQLite import df_SQLite_copy
 def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
     """
     Analyse Exploratoire des Données (EDA) pour df_SQLite
-    
     Étapes :
     1. Exploration initiale (dimensions, types, aperçu)
     2. Détection des valeurs manquantes
@@ -32,14 +31,14 @@ def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
     print(f"EDA & PRÉPARATION : {df_name}")
     print("=" * 80)
 
-    # On effectue une étape 1: Exploration initiale (dimensions, types, aperçu)
+    # On effectue une étape  : Exploration initiale (dimensions, types, aperçu)
     print(f"\n Dimensions : {df_copy.shape[0]} lignes × {df_copy.shape[1]} colonnes")
     print("\n Types de données :")
     print(df_copy.dtypes)
     print("\n Aperçu des premières lignes :")
     print(df_copy.head())
 
-    # On effectue une étape 2: Détection des valeurs manquantes  
+    # On effectue une étape 2 : Détection des valeurs manquantes  
     na_counts = df_copy.isna().sum()
     na_pct = (na_counts / len(df_copy)) * 100
     na_table = pd.DataFrame({'Nb NaN': na_counts, '% NaN': na_pct})
@@ -76,7 +75,7 @@ def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
     else:
         print("\n Aucune valeur manquante détectée")
 
-    # On effectue une étape 3: Détection et suppression des doublons
+    # On effectue une étape 3 : Détection et suppression des doublons
     dupl = df_copy.duplicated().sum()
     print(f"\n Doublons détectés : {dupl}")
     if dupl > 0:
