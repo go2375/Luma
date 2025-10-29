@@ -29,3 +29,4 @@ dfs_normalized = [df.reindex(columns=all_cols, fill_value="") for df in dfs_to_c
 
 df_aggregated = pd.concat(dfs_normalized, ignore_index=True)
 print(f"\n✓ DataFrames concaténés : {df_aggregated.shape[0]} lignes × {df_aggregated.shape[1]} colonnes")
+print(df_aggregated)
