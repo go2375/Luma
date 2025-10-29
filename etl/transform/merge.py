@@ -19,8 +19,8 @@ dfs_to_concat = [
     df_result_WebScrap,
     df_result_API,
     df_result_BigData,
-    df_result_Another,
-    df_result_Other
+    df_result_CSV,
+    df_result_SQLite
 ]
 
 # Pour éviter erreur sur colonnes non présentes, on peut faire union des colonnes
