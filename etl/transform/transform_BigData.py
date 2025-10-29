@@ -217,9 +217,10 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     return df_copy
 
 # On exécute l'EDA pour df_BigData
+df_result_BigData = EDA_data_BigData(df_BigData_copy, df_name="df_BigData_copy")
+
 if __name__ == "__main__":
     print("\nDémarrage de l'EDA pour df_BigData\n")
-    df_result_BigData = EDA_data_BigData(df_BigData_copy, df_name="df_BigData_copy")
 
     # Aperçu final
     print("\nAperçu final après EDA :")

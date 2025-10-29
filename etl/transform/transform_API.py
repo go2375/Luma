@@ -148,13 +148,12 @@ def EDA_data_API(df, df_name="df_API_copy"):
     
     return df_copy
 
-# On exécute l'EDA pour df_API
+# On exécute l'EDA sur df_API_copy
+df_result_API = EDA_data_API(df_API_copy, df_name="df_API_copy")
+
 if __name__ == "__main__":
     print("\n Démarrage de l'EDA pour df_API\n")
-    
-    # On exécute l'EDA sur df_API_copy
-    df_result_API = EDA_data_API(df_API_copy, df_name="df_API_copy")
-    
+        
     # On vérifie
     print("\n" + "=" * 80)
     print("\nPremières lignes :")

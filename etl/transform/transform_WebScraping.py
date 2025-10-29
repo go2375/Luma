@@ -108,9 +108,10 @@ def EDA_data_WebScrap(df, df_name="df_WebScrap_copy", n_departments=4):
     return df_copy
 
 # On exécute l'EDA pour df_WebScrap
+df_result_WebScrap = EDA_data_WebScrap(df_WebScrap_copy, df_name="df_WebScrap_copy")
+
 if __name__ == "__main__":
-    print("\nDémarrage de l'EDA pour df_WebScrap\n")
-    df_result_WebScrap = EDA_data_WebScrap(df_WebScrap_copy, df_name="df_WebScrap_copy")
+    print("\nDémarrage de l'EDA pour df_WebScrap\n")  
     
     # Aperçu final
     print("\nAperçu final après EDA :")

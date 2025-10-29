@@ -1,16 +1,20 @@
 import os
+import sys
 import pandas as pd
 import sqlite3
 
+# On ajoute le dossier extract au path pour importer les données
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
 # On importe tous les dfs transformés
-from transform.transform_WebScraping import df_result_WebScrap
-from transform.transform_API import df_result_API
-from transform.transform_BigData import df_result_BigData
-from transform.transform_Another import df_result_CSV
-from transform.transform_Other import df_result_SQLite
+from transform_WebScraping import df_result_WebScrap
+from transform_API import df_result_API
+from transform_BigData import df_result_BigData
+from transform_CSV import df_result_CSV
+from transform_SQLite import df_result_SQLite
 
 # On fait une concaténation de tous les dfs
-# On choisit uniquement les colonnes communes aux DataFrames si nécessaire
+# On choisit uniquement les colonnes communes aux dfs si nécessaire
 dfs_to_concat = [
     df_result_WebScrap,
     df_result_API,

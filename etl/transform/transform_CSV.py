@@ -204,9 +204,10 @@ def EDA_data_CSV(df, df_name="df_CSV_copy"):
     return df_copy
 
 # On exécute l'EDA pour df_CSV
+df_result_CSV = EDA_data_CSV(df_CSV_copy, df_name="df_CSV_copy")
+
 if __name__ == "__main__":
-    print("\nDémarrage de l'EDA pour df_CSV\n")
-    df_result_CSV = EDA_data_CSV(df_CSV_copy, df_name="df_CSV_copy")
+    print("\nDémarrage de l'EDA pour df_CSV\n") 
 
     # Aperçu final
     print("\nAperçu final après EDA :")

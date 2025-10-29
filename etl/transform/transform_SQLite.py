@@ -146,9 +146,10 @@ def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
     return df_copy
 
 # On exécute l'EDA pour df_SQLite
+df_result_SQLite = EDA_data_SQLite(df_SQLite_copy, df_name="df_SQLite_copy")
+
 if __name__ == "__main__":
-    print("\n Démarrage de l'EDA pour df_SQLite\n")
-    df_result_SQLite = EDA_data_SQLite(df_SQLite_copy, df_name="df_SQLite_copy")
+    print("\n Démarrage de l'EDA pour df_SQLite\n")  
 
     # Aperçu final
     print("\n Aperçu final après EDA :")
