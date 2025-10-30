@@ -249,3 +249,4 @@ if __name__ == "__main__":
     print("\nAperçu final après EDA :")
     print(df_result_BigData.head())
     print(df_result_BigData.info())
+    print(len(df_BigData_copy))

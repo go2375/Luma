@@ -120,7 +120,7 @@ def EDA_data_CSV(df, df_name="df_CSV_copy"):
         nom_site = row.get('nom_site','')
         site_id = row.name
         if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", nom_site):
-            return f"Site touristique #{site_id}"
+            return f"Activité touristique #{site_id+1}"
         return nom_site
 
     def anonymize_description(desc):
@@ -205,3 +205,4 @@ if __name__ == "__main__":
     print("\nAperçu final après EDA :")
     print(df_result_CSV.head())
     print(df_result_CSV.info())
+    print(len(df_CSV_copy))

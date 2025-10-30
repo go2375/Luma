@@ -62,11 +62,15 @@ def EDA_data_API(df, df_name="df_API_copy"):
         print("\n Traitement des valeurs manquantes :")
         for col in df_copy.columns:
             if df_copy[col].isna().sum() > 0:
+                nb_missing = df_copy[col].isna().sum()
                 if col == 'code_insee':
-                    # On garde les NaN pour pouvoir compléter depuis d'autres sources plus tard
-                    nb_missing = df_copy[col].isna().sum()
-                if nb_missing > 0:
-                    print(f"  - {col} : {nb_missing} valeurs manquantes conservées pour futur merge")
+                    print(f"  - {col} : {nb_missing} valeurs manquantes (seront supprimées plus tard)")
+                elif col == 'nom_commune':
+                    df_copy[col] = df_copy[col].fillna('Inconnu')
+                    print(f"  - {col} : valeurs manquantes remplacées par 'Inconnu'")
+                elif col == 'label_cite_caractere':
+                    df_copy[col] = df_copy[col].fillna(1)
+                    print(f"  - {col} : valeurs manquantes remplacées par 1")
                 elif col == 'nom_commune':
                     # Remplacer par 'Inconnu' si nom manquant
                     df_copy[col] = df_copy[col].fillna('Inconnu')

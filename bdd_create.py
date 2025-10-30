@@ -88,7 +88,7 @@ cur.executescript("""
         commune_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom_commune TEXT NOT NULL,
         nom_commune_breton TEXT,
-        code_insee TEXT UNIQUE NOT NULL,
+        code_insee TEXT UNIQUE,
         label_cite_caractere BOOLEAN DEFAULT 0,
         department_id INTEGER NOT NULL,
         FOREIGN KEY (department_id) REFERENCES Department(department_id)
