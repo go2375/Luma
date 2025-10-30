@@ -9,3 +9,4 @@ db_source/
 *.ns
 *.log
 /etl/extract/google-chrome-stable_current_amd64.deb
+/etl/extract/__pycache__/

@@ -13,12 +13,6 @@ print(" Démarrage du merge final...")
 # On commence merge par une définition de notre référence principale df_result_BigData
 df_final = df_result_BigData.copy()
 
-# On standardise des colonnes textuelles
-text_cols = ['nom_site', 'nom_commune', 'nom_department', 'description']
-for col in text_cols:
-    if col in df_final.columns:
-        df_final[col] = df_final[col].astype(str).str.strip()
-
 # On standardise des colonnes booléennes
 bool_cols = ['est_activite', 'est_lieu']
 for col in bool_cols:
