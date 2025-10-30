@@ -1,11 +1,10 @@
-/lumavenv
+/lumeavenv
 /bdd
 .env
 **/__pycache__/
 app/__pycache__/
 db/
 db_source/
-db_source/BigData_source.csv
 *.lock
 *.wt
 *.ns
@@ -14,3 +13,4 @@ db_source/BigData_source.csv
 /etl/extract/__pycache__/
 /etl/transform/__pycache__/
 /etl/data/
+/load/.gitattributes
