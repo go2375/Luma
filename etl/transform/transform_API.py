@@ -48,8 +48,8 @@ def EDA_data_API(df, df_name="df_API_copy"):
     if not na_table[na_table['Nb NaN'] > 0].empty:
         print("\n Valeurs manquantes détectées :")
         print(na_table[na_table['Nb NaN'] > 0])
-        
-        # On visualise les valeurs manquantes
+
+        # On visualise des valeurs manquantes
         plt.figure(figsize=(10, 4))
         sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
         plt.title(f"Heatmap des valeurs manquantes ({df_name})")
@@ -57,12 +57,12 @@ def EDA_data_API(df, df_name="df_API_copy"):
         plt.ylabel("Lignes")
         plt.tight_layout()
         plt.show()
-        
+
         # On traite des valeurs manquantes
-        print("\n Traitement des valeurs manquantes :")
+        print("\nTraitement des valeurs manquantes :")
         for col in df_copy.columns:
-            if df_copy[col].isna().sum() > 0:
-                nb_missing = df_copy[col].isna().sum()
+            nb_missing = df_copy[col].isna().sum()
+            if nb_missing > 0:
                 if col == 'code_insee':
                     print(f"  - {col} : {nb_missing} valeurs manquantes (seront supprimées plus tard)")
                 elif col == 'nom_commune':
@@ -71,17 +71,9 @@ def EDA_data_API(df, df_name="df_API_copy"):
                 elif col == 'label_cite_caractere':
                     df_copy[col] = df_copy[col].fillna(1)
                     print(f"  - {col} : valeurs manquantes remplacées par 1")
-                elif col == 'nom_commune':
-                    # Remplacer par 'Inconnu' si nom manquant
-                    df_copy[col] = df_copy[col].fillna('Inconnu')
-                    print(f"  - {col} : valeurs manquantes remplacées par 'Inconnu'")
-                elif col == 'label_cite_caractere':
-                    # Remplir avec 1 (toutes les communes de l'API sont labellisées)
-                    df_copy[col] = df_copy[col].fillna(1)
-                    print(f"  - {col} : valeurs manquantes remplacées par 1")
     else:
-        print("\n Aucune valeur manquante détectée")
-    
+        print("\nAucune valeur manquante détectée")
+
     # On effectue une étape 3: Détection et suppression des doublons
     dupl = df_copy.duplicated().sum()
     print(f"\n Doublons détectés : {dupl}")
