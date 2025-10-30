@@ -3,13 +3,20 @@ import sqlite3
 import pandas as pd
 import sys
 
-# On ajoute le dossier extract au path pour importer les données
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "transform")))
+# ------------------------------------------------------------
+# 1️⃣ Charger df_final depuis le CSV
+# ------------------------------------------------------------
+transform_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "transform"))
+csv_path = os.path.join(transform_dir, "df_final_merge.csv")
+if not os.path.exists(csv_path):
+    raise FileNotFoundError(f"Fichier CSV introuvable : {csv_path}")
 
-# On importe le df_affregated depuis merge
-from merge import df_aggregated
+df_final = pd.read_csv(csv_path, encoding='utf-8-sig')
+print(f"\n✅ df_final chargé depuis CSV : {csv_path} ({len(df_final)} lignes)")
 
-#  Définir le chemin de la base ---
+# ------------------------------------------------------------
+# 2️⃣ Définir le chemin de la base SQLite
+# ------------------------------------------------------------
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 bdd_dir = os.path.join(base_dir, "bdd")
 os.makedirs(bdd_dir, exist_ok=True)
@@ -17,20 +24,22 @@ sqlite_path = os.path.join(bdd_dir, "bdd_connexion.sqlite")
 
 conn = sqlite3.connect(sqlite_path)
 cur = conn.cursor()
-
-# Activation des clés étrangères ---
 cur.execute("PRAGMA foreign_keys = ON;")
 
-# Vérification colonnes nécessaires ---
+# ------------------------------------------------------------
+# 3️⃣ Vérification des colonnes nécessaires
+# ------------------------------------------------------------
 required_cols = [
     "nom_site", "est_activite", "est_lieu", "description", "latitude", "longitude",
     "nom_commune", "nom_commune_breton", "nom_department", "nom_department_breton", "code_insee"
 ]
 for col in required_cols:
-    if col not in df_aggregated.columns:
-        df_aggregated[col] = ""
+    if col not in df_final.columns:
+        df_final[col] = ""
 
-# Création des tables ---
+# ------------------------------------------------------------
+# 4️⃣ Création des tables SQLite
+# ------------------------------------------------------------
 cur.execute("""
 CREATE TABLE IF NOT EXISTS Department (
     department_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,9 +74,11 @@ CREATE TABLE IF NOT EXISTS Site_Touristique (
 """)
 conn.commit()
 
-# Insertion Departments ---
+# ------------------------------------------------------------
+# 5️⃣ Insertion Departments
+# ------------------------------------------------------------
 print("\nInsertion des départements...")
-df_dept = df[['nom_department', 'nom_department_breton']].drop_duplicates(subset=['nom_department'])
+df_dept = df_final[['nom_department', 'nom_department_breton']].drop_duplicates(subset=['nom_department'])
 for _, row in df_dept.iterrows():
     cur.execute("""
         INSERT OR IGNORE INTO Department (nom_department, nom_department_breton)
@@ -76,14 +87,15 @@ for _, row in df_dept.iterrows():
 conn.commit()
 print(f"✓ {len(df_dept)} départements insérés ou ignorés si déjà présents.")
 
-# Mapping Department pour Communes ---
+# Mapping Department pour Communes
 cur.execute("SELECT department_id, nom_department FROM Department;")
 dept_map = {nom: did for did, nom in cur.fetchall()}
 
-# Insertion Communes ---
+# ------------------------------------------------------------
+# 6️⃣ Insertion Communes
+# ------------------------------------------------------------
 print("\nInsertion des communes...")
-# garder code_insee vide si manquant, mais nom_commune obligatoire
-df_commune = df[['nom_commune', 'nom_commune_breton', 'code_insee', 'nom_department']].drop_duplicates(subset=['nom_commune'])
+df_commune = df_final[['nom_commune', 'nom_commune_breton', 'code_insee', 'nom_department']].drop_duplicates(subset=['nom_commune'])
 df_commune['department_id'] = df_commune['nom_department'].map(dept_map)
 df_commune.drop(columns=['nom_department'], inplace=True)
 
@@ -95,13 +107,15 @@ for _, row in df_commune.iterrows():
 conn.commit()
 print(f"✓ {len(df_commune)} communes insérées ou ignorées si déjà présentes.")
 
-# Mapping Commune pour Sites ---
+# Mapping Commune pour Sites
 cur.execute("SELECT commune_id, nom_commune FROM Commune;")
 commune_map = {nom: cid for cid, nom in cur.fetchall()}
 
-# Insertion Sites touristiques ---
+# ------------------------------------------------------------
+# 7️⃣ Insertion Sites touristiques
+# ------------------------------------------------------------
 print("\nInsertion des sites touristiques...")
-df_sites = df[['nom_site', 'est_activite', 'est_lieu', 'description', 'latitude', 'longitude', 'nom_commune']].drop_duplicates().copy()
+df_sites = df_final[['nom_site', 'est_activite', 'est_lieu', 'description', 'latitude', 'longitude', 'nom_commune']].drop_duplicates().copy()
 df_sites['commune_id'] = df_sites['nom_commune'].map(commune_map)
 df_sites.drop(columns=['nom_commune'], inplace=True)
 
@@ -115,7 +129,9 @@ for _, row in df_sites.iterrows():
 conn.commit()
 print(f"✓ {len(df_sites)} sites touristiques insérés ou ignorés si déjà présents.")
 
-# Vérification finale ---
+# ------------------------------------------------------------
+# 8️⃣ Vérification finale
+# ------------------------------------------------------------
 for table in ["Department", "Commune", "Site_Touristique"]:
     cur.execute(f"SELECT COUNT(*) FROM {table};")
     count = cur.fetchone()[0]

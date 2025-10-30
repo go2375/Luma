@@ -57,7 +57,7 @@ print(f"Total lignes scrappées : {len(df_WebScrap)}")
 # On créer un df_WebScrap_copy pour éviter les modifications du df original pour transform
 df_WebScrap_copy = df_WebScrap.copy(deep=True)
 
-# On crée un pour un fichier CSV
+# On crée un path pour un fichier CSV
 csv_path = "webscrap_villes_bretagne.csv"
 
 # On sauvegarde le df_WebScrap en CSV
