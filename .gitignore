@@ -8,3 +8,4 @@ db_source/
 *.wt
 *.ns
 *.log
+/etl/extract/google-chrome-stable_current_amd64.deb
