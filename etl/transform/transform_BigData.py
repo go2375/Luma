@@ -19,7 +19,6 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     Étapes :
     1. Suppression de la colonne _id
     2. Séparation du code_postal_et_nom_commune
-    2. Extraction et première normalisation de type_site
     3. Extraction et première normalisation de type_site
     4. Gestion des dates
     5. Visualisation des valeurs manquantes
@@ -33,7 +32,7 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     13. Suppression des lignes dont nom_site reste manquant
     14. Anonymisation du nom_site et de la description
     15. Normalisation avancée du type_site et suppression des doublons internes
-    16. Création de la colonne type_site_final
+    16. Création des colonnes est_activite et est_lieu
     17. Nettoyage final des colonnes pour le type_site
     """
 
@@ -136,7 +135,7 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
         return group
 
     df_copy = df_copy.groupby(cols_dup, group_keys=False).apply(fill_missing_nom_site)
-
+    
     # On effectue une étape 13 : Suppression des lignes dont nom_site reste manquant
     before_drop = df_copy.shape[0]
     df_copy = df_copy[~df_copy['nom_site'].isna() & (df_copy['nom_site'] != '')]
@@ -171,37 +170,61 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
 
     df_copy['type_site'] = df_copy['type_site'].apply(remove_internal_dup)
 
-    # On effectue une étape 16 : Création de la colonne type_site_final
-    def create_type_site_final(row):
-        items = [x.strip() for x in row['type_site'].split(';') if x.strip()]
-        items = list(dict.fromkeys(items))
-        return "Lieu touristique : " + "; ".join(items) if items else "Lieu touristique"
+    # On effectue une étape 16 : Création des colonnes est_activite et est_lieu
+    # On définit la liste des mots-clés associés à des activités
+    activity_keywords = [
+        "visite", "surfing", "canoe", "canoë", "kayak", "balade", "voile",
+        "tennis", "piscine", "surf", "nautique", "nautic", "cyclotouriste",
+        "cinéma", "cine", "climb", "golf", "vélos", "velo", "gym", "pilates",
+        "karting", "randos", "concert", "théâtre", "spectacle", "rando",
+        "expo", "exposition", "sortie", "rencontres", "marche", "yoga",
+        "relaxation", "soirée jeux", "contée", "vente directe", "handball",
+        "stage", "soirée", "initiation pêche", "atelier cuisine",
+        "journée immersion"
+    ]
 
-    df_copy['type_site_final'] = df_copy.apply(create_type_site_final, axis=1)
+    # On compile un seul regex avec tous les mots-clés, insensible à la casse et aux accents
+    activity_pattern = re.compile(
+        r"|".join([re.escape(word) for word in activity_keywords]),
+        flags=re.IGNORECASE
+    )
 
-    # On vérifie des doublons internes
-    def has_internal_dup(type_str):
-        items = [x.strip() for x in type_str.split(';') if x.strip()]
-        return len(items) != len(set(items))
+    # On effectue une nettoyage du texte (retrait des accents et ponctuation simple pour uniformiser)
+    def normalize_text(text):
+        if not isinstance(text, str):
+            return ""
+        text = text.lower()
+        text = re.sub(r"[^a-zàâäéèêëïîôöùûüç\s]", " ", text)
+        return re.sub(r"\s+", " ", text).strip()
 
-    df_copy['type_site_has_dup'] = df_copy['type_site'].apply(has_internal_dup)
-    type_dup_rows = df_copy[df_copy['type_site_has_dup']]
-    print(f"Lignes avec doublons internes dans type_site : {type_dup_rows.shape[0]}")
-    if type_dup_rows.shape[0] > 0:
-        print(type_dup_rows[['nom_site','type_site']])
+    # On détecte des activités
+    df_copy["nom_site_clean"] = df_copy["nom_site"].apply(normalize_text)
 
-    # On affiche des valeurs uniques
-    print("\nValeurs uniques de type_site_final :")
-    print(df_copy['type_site_final'].unique())
+    df_copy["est_activite"] = df_copy["nom_site_clean"].apply(
+        lambda x: 1 if activity_pattern.search(x) else 0
+    )
 
+    # est_lieu = 1 si ce n’est pas une activité
+    df_copy["est_lieu"] = df_copy["est_activite"].apply(lambda x: 0 if x == 1 else 1)
+
+    # Conversion explicite en booléen
+    df_copy["est_activite"] = df_copy["est_activite"].astype(bool)
+    df_copy["est_lieu"] = df_copy["est_lieu"].astype(bool)
+
+    # Vérification des types
+    print("Types de colonnes après conversion :")
+    print(df_copy[["est_activite", "est_lieu"]].dtypes)
+
+    # Suppression de la colonne temporaire de nettoyage
+    df_copy.drop(columns=["nom_site_clean"], inplace=True)
+
+    print("✓ Étape 17 : Colonnes 'est_activite' et 'est_lieu' créées avec succès.")
+    print(df_copy[["nom_site", "est_activite", "est_lieu"]].head(10))
+    
     # On effectue une étape 17 : Nettoyage final des colonnes pour le type_site
     # On supprime les colonnes intermédiaires inutiles pour type_site
-    cols_to_drop = ['type_site', 'type_site_has_dup']
+    cols_to_drop = ['type_site']
     df_copy = df_copy.drop(columns=[c for c in cols_to_drop if c in df_copy.columns])
-    
-    # On renomme la colonne finale propre en type_site
-    if 'type_site_final' in df_copy.columns:
-        df_copy = df_copy.rename(columns={'type_site_final': 'type_site'})
 
     # On effectue une étape finale : Résumé final
     print("\n" + "="*80)

@@ -23,7 +23,7 @@ def EDA_data_CSV(df, df_name="df_CSV_copy"):
     4. Remplissage latitude/longitude depuis point_geo
     5. Suppression des lignes encore manquantes
     6. Détection et suppression des doublons
-    7. Création d'une colonne type_site
+    7. Création d'une colonne est_activite
     8. Anonymisation du nom_site et de la description
     9. Suppression des colonnes inutiles
     10. Ajout de created_at
@@ -108,21 +108,12 @@ def EDA_data_CSV(df, df_name="df_CSV_copy"):
     else:
         print("\n✓ Aucun doublon détecté")
 
-    # On effectue une étape 7 : Création d'une colonne type_site
-    def build_type_site(row):
-        activities = []
-        act_sport = row.get('act_sport', '')
-        if pd.notna(act_sport) and act_sport.strip():
-            for val in act_sport.split('#'):
-                activities.append(f"Activité sportive : {val.strip()}")
-        act_cult = row.get('act_cult', '')
-        if pd.notna(act_cult) and act_cult.strip():
-            for val in act_cult.split('#'):
-                activities.append(f"Activité culturelle : {val.strip()}")
-        return "; ".join(activities)
+    # On effectue une étape 7 : Création d'une colonne est_activite = 1 pour toutes les lignes
+    df_copy['est_activite'] = 1
+    df_copy['est_activite'] = df_copy['est_activite'].astype(bool)
 
-    df_copy['type_site'] = df_copy.apply(build_type_site, axis=1)
-    df_copy['type_site'] = df_copy['type_site'].replace('', "Activité(s) sportive(s) ou culturelle(s)").fillna("Activité(s) sportive(s) ou culturelle(s)")
+    # Vérification
+    print(df_copy['est_activite'].head(10))
 
     # On effectue une étape 8 : Anonymisation du nom_site et de la description
     def anonymize_nom_site(row):
@@ -157,9 +148,10 @@ def EDA_data_CSV(df, df_name="df_CSV_copy"):
     df_copy['updated_at'] = pd.to_datetime(df_copy['updated_at'], errors='coerce')
     df_copy['latitude'] = df_copy['latitude'].astype(float)
     df_copy['longitude'] = df_copy['longitude'].astype(float)
-    text_cols = ['type_site', 'description', 'nom_commune', 'nom_site', 'code_insee']
+    text_cols = ['description', 'nom_commune', 'nom_site', 'code_insee']
     for col in text_cols:
-        df_copy[col] = df_copy[col].astype(str)
+        if col in df_copy.columns:
+            df_copy[col] = df_copy[col].astype(str)
 
     print("\n✓ Normalisation des types terminée")
 

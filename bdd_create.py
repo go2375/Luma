@@ -99,7 +99,8 @@ cur.executescript("""
     CREATE TABLE IF NOT EXISTS Site_Touristique (
         site_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom_site TEXT NOT NULL,
-        type_site TEXT,
+        est_activite BOOLEAN DEFAULT 0,
+        est_lieu BOOLEAN DEFAULT 0,
         description TEXT,
         latitude REAL,
         longitude REAL,
