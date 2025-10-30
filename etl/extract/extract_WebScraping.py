@@ -1,3 +1,4 @@
+import os
 import time
 import random
 import pandas as pd
@@ -57,10 +58,10 @@ print(f"Total lignes scrappées : {len(df_WebScrap)}")
 # On créer un df_WebScrap_copy pour éviter les modifications du df original pour transform
 df_WebScrap_copy = df_WebScrap.copy(deep=True)
 
-# On crée un path pour un fichier CSV
-csv_path = "webscrap_villes_bretagne.csv"
+# On sauvegarde le résultat en CSV
+output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+os.makedirs(output_dir, exist_ok=True)
+csv_path = os.path.join(output_dir, "df_WebScrap_extract_result.csv")
 
-# On sauvegarde le df_WebScrap en CSV
-df_WebScrap.to_csv(csv_path, index=False, encoding='utf-8-sig')
-
-print(f"\n Résultats de df_WebScrap sauvegardés dans : {csv_path}")
+df_WebScrap_copy.to_csv(csv_path, index=False, encoding='utf-8-sig')
+print(f"\n DataFrame df_WebScrap_copy sauvegardé en CSV : {csv_path}")

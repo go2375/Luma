@@ -4,18 +4,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# On définit le chemin pour récuperer notre CSV WebScrap
+# Définition des chemins
+
 base_dir = os.path.dirname(__file__)
-extract_dir = os.path.join(base_dir, "..", "extract")
-csv_path = os.path.join(extract_dir, "webscrap_villes_bretagne.csv")
+input_dir = os.path.join(base_dir, "..", "data")  # chemin du CSV d'entrée
+input_csv = os.path.join(input_dir, "df_WebScrap_extract_result.csv")
 
-# On vérifie que le fichier existe
-if not os.path.exists(csv_path):
-    raise FileNotFoundError(f"Fichier CSV introuvable : {csv_path}")
+output_dir = os.path.join(base_dir, "..", "data")  # chemin du CSV de sortie
+os.makedirs(output_dir, exist_ok=True)
+output_csv = os.path.join(output_dir, "df_WebScrap_transform_result.csv")
 
-# On charge le CSV
-df_WebScrap = pd.read_csv(csv_path, encoding='utf-8-sig')
-print(f"\n CSV chargé depuis extract : {csv_path} ({len(df_WebScrap)} lignes)")
+# Vérification que le fichier existe
+if not os.path.exists(input_csv):
+    raise FileNotFoundError(f"Fichier CSV introuvable : {input_csv}")
+
+
+# Chargement du CSV
+
+df_WebScrap = pd.read_csv(input_csv, encoding='utf-8-sig')
+print(f"\nCSV chargé : {input_csv} ({len(df_WebScrap)} lignes)")
 
 def EDA_data_WebScrap(df, df_name="df_WebScrap", n_departments=4):
     """
@@ -104,9 +111,12 @@ def EDA_data_WebScrap(df, df_name="df_WebScrap", n_departments=4):
     
     return df_copy
 
-# On exécute l'EDA pour df_WebScrap
-df_result_WebScrap = EDA_data_WebScrap(df_WebScrap, df_name="df_WebScrap")
-
 if __name__ == "__main__":
     print("\nDémarrage de l'EDA pour df_WebScrap\n")  
-    print(df_result_WebScrap.info())
+    df_result_WebScrap = EDA_data_WebScrap(df_WebScrap, df_name="df_WebScrap")
+    
+    print(df_result_WebScrap.info())  # <-- ici, la variable existe
+    
+    # Sauvegarde du résultat
+    df_result_WebScrap.to_csv(output_csv, index=False, encoding='utf-8-sig')
+    print(f"\nDataFrame df_result_WebScrap sauvegardé en CSV : {output_csv}")

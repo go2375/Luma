@@ -32,3 +32,11 @@ print(df_CSV.info())
 
 # On créer un df_CSV_copy pour éviter les modifications du df original pour transform
 df_CSV_copy = df_CSV.copy(deep=True)
+
+# On sauvegarde le résultat en CSV
+output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+os.makedirs(output_dir, exist_ok=True)
+csv_path = os.path.join(output_dir, "df_CSV_extract_result.csv")
+
+df_CSV_copy.to_csv(csv_path, index=False, encoding='utf-8-sig')
+print(f"\n DataFrame df_CSV_copy sauvegardé en CSV : {csv_path}")

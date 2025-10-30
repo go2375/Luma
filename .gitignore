@@ -2,8 +2,10 @@
 /bdd
 .env
 **/__pycache__/
+app/__pycache__/
 db/
 db_source/
+db_source/BigData_source.csv
 *.lock
 *.wt
 *.ns
@@ -11,3 +13,4 @@ db_source/
 /etl/extract/google-chrome-stable_current_amd64.deb
 /etl/extract/__pycache__/
 /etl/transform/__pycache__/
+/etl/data/

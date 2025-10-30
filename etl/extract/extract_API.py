@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import os
 
 # Je définis le chemin pour récuperer les données via API data_bretagne pour obtenir liste des communes ayant label petite cité de caractère
 url = "https://data.bretagne.bzh/api/records/1.0/search/?dataset=petites-cites-de-caractere-en-bretagne&rows=100"
@@ -30,3 +31,11 @@ print(df_API)
 
 # On créer un df_API_copy pour éviter les modifications du df original pour transform
 df_API_copy = df_API.copy(deep=True)
+
+# On sauvegarde le résultat en CSV
+output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+os.makedirs(output_dir, exist_ok=True)
+csv_path = os.path.join(output_dir, "df_API_extract_result.csv")
+
+df_API_copy.to_csv(csv_path, index=False, encoding='utf-8-sig')
+print(f"\n DataFrame df_API_copy sauvegardé en CSV : {csv_path}")

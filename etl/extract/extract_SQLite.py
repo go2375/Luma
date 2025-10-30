@@ -34,3 +34,11 @@ print(df_SQLite.info())
 
 # On créer un df_SQLite_copy pour éviter les modifications du df original pour transform
 df_SQLite_copy = df_SQLite.copy(deep=True)
+
+# On sauvegarde le résultat en CSV
+output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+os.makedirs(output_dir, exist_ok=True)
+csv_path = os.path.join(output_dir, "df_SQLite_extract_result.csv")
+
+df_SQLite_copy.to_csv(csv_path, index=False, encoding='utf-8-sig')
+print(f"\n DataFrame df_SQLite_copy sauvegardé en CSV : {csv_path}")
