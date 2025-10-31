@@ -101,6 +101,7 @@ sudo docker-compose up -d
 
 # Lancer l’API
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
+```bash
 
 L’API est accessible : http://127.0.0.1:8000/docs
 
