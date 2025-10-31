@@ -30,6 +30,7 @@ Les données sont accessibles via une **API REST sécurisée** (FastAPI), avec u
 
 ---
 
+```
 ## 🧩 Structure du projet
 Lumea/
 ├── app/
@@ -66,6 +67,7 @@ Lumea/
 ├── docker-compose.yml
 ├── requirements.txt
 └── README.md
+```
 
 
 ---
