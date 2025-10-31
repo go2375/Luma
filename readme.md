@@ -111,13 +111,13 @@ L’API est accessible : http://127.0.0.1:8000/docs
 Basé sur Merise (MCD/MLD) avec intégrité référentielle.
 
 **Entités principales :**
- - 'User' : id, username, password_hash, role_id, anonymized, created_at, updated_at, deleted_at
-- 'Role' : id, nom_role (admin, visiteur, prestataire)
-- 'Department' : id, nom, nom_breton
-- 'Commune' : id, nom, nom_breton, code_insee, label_cite_caractere, department_id
-- 'SiteTouristique' : id, nom, description, latitude, longitude, commune_id, prestataire_id, est_activite, est_lieu, anonymized, created_at, updated_at, deleted_at
-- 'Parcours' : id, nom, createur_id, created_at, updated_at, deleted_at
-- 'Parcours_Site' : id, parcours_id, site_id, ordre_visite (N:N, suppression en cascade, unique par site par parcours)
+- 'Utilisateur' : user_id, username, password_hash, role_id, anonymized, created_at, updated_at, deleted_at
+- 'Role' : role_id, nom_role (admin, visiteur, prestataire)
+- 'Department' : department_id, department_nom, department_nom_breton
+- 'Commune' : commune_id, nom_commune, nom_commune_breton, code_insee, label_cite_caractere, department_id
+- 'SiteTouristique' : site_id, nom_site, description, latitude, longitude, commune_id, prestataire_id, est_activite, est_lieu, anonymized, created_at, updated_at, deleted_at
+- 'Parcours' : parcours_id, nom_parcours, createur_id, created_at, updated_at, deleted_at
+- 'Parcours_Site' : parcours_site_id, parcours_id, site_id, ordre_visite (N:N, suppression en cascade, unique par site par parcours)
 
 ---
 
