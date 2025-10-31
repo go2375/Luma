@@ -81,25 +81,25 @@ Lumea/
 
 ## 🚀 Installation et lancement
 
-# Cloner le dépôt
+1. Cloner le dépôt
 git clone https://github.com/go2375/Lumea.git
 cd Lumea
 
-# Créer et activer l’environnement virtuel
+2. Créer et activer l’environnement virtuel
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
 
-# Installer les dépendances
+3. Installer les dépendances
 pip install -r requirements.txt
 
-# Configurer les variables d'environnement
+4. Configurer les variables d'environnement
 .env
-# Modifier SECRET_KEY, JWT_EXPIRE_HOURS, DATABASE_URL
+Modifier SECRET_KEY, JWT_EXPIRE_HOURS, DATABASE_URL
 
-# Lancer docker my_mongo
+5. Lancer docker my_mongo
 sudo docker-compose up -d
 
-# Lancer l’API
+6. Lancer l’API
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 
 L’API est accessible : http://127.0.0.1:8000/docs
