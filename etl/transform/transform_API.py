@@ -5,28 +5,26 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-
-# Chemins d'entrée et sortie CSV
-
+# Je définis le chemin du script courant qui est : Lumea/etl/transform
 base_dir = os.path.dirname(__file__)
 
-# Chemin du CSV d'entrée
+# Je définis le chemin pour récuperer mon CSV du dataframe API à la sortie de l'extraction 
 input_dir = os.path.join(base_dir, "..", "data")
 input_csv = os.path.join(input_dir, "df_API_extract_result.csv")
 
-# Chemin du CSV de sortie
+# Je définis le chemin pour créer le CSV à la fin de phase de transformation 
 output_dir = os.path.join(base_dir, "..", "data")
 os.makedirs(output_dir, exist_ok=True)
 output_csv = os.path.join(output_dir, "df_API_transform_result.csv")
 
 
-# Import du DataFrame depuis extract_API
+# J'importe le dataframe depuis extract_API
 
 sys.path.append(os.path.abspath(os.path.join(base_dir, "..", "extract")))
 from extract_API import df_API_copy
 
 
-# Fonction EDA pour df_API
+# Je crée ma fonction de la transformation pour df_API
 
 def EDA_data_API(df, df_name="df_API_copy"):
     df_copy = df.copy(deep=True)

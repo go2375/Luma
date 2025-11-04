@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 
-# CHEMINS CSV TRANSFORMÉS
+# Je définis le chemin pour récuperer mes CSV de dataframes transformés
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 
@@ -13,15 +13,14 @@ csv_CSV = os.path.join(base_dir, "df_CSV_transform_result.csv")
 csv_SQLite = os.path.join(base_dir, "df_SQLite_transform_result.csv")
 
 
-# 1 IMPORT DES CSV TRANSFORMÉS
-
+# 1. J'importe mes CSV
 df_result_WebScrap = pd.read_csv(csv_WebScrap, dtype=str)
 df_result_API = pd.read_csv(csv_API, dtype=str)
 df_result_BigData = pd.read_csv(csv_BigData, dtype=str)
 df_result_CSV = pd.read_csv(csv_CSV, dtype=str)
 df_result_SQLite = pd.read_csv(csv_SQLite, dtype=str)
 
-# Conversion booléennes robustes
+# Je valide encore une conversion de mes colonns booléennes
 bool_cols = ['est_activite', 'est_lieu']
 for df in [df_result_BigData, df_result_CSV]:
     for col in bool_cols:
@@ -35,7 +34,7 @@ for df in [df_result_BigData, df_result_CSV]:
 print(" CSV transformés importés et booléens convertis")
 
 
-# 2 RÉFÉRENCE PRINCIPALE : BigData
+# 2. Je définis comme ma référence principale le dataframe BigData
 
 df_final = df_result_BigData.copy()
 for col in ['nom_site', 'nom_commune', 'nom_department']:
@@ -45,7 +44,7 @@ for col in ['nom_site', 'nom_commune', 'nom_department']:
 print(f"Référence BigData : {df_final.shape[0]} lignes")
 
 
-# 3 AJOUT DES LIGNES CSV
+# 3. J'ajoute le dataframe CSV
 
 df_csv_to_add = df_result_CSV.copy()
 for col in bool_cols:
@@ -60,7 +59,7 @@ df_final = pd.concat([df_final, df_csv_to_add], ignore_index=True)
 print(f"Après ajout CSV : {df_final.shape[0]} lignes")
 
 
-# 4 AJOUT NOM_COMMUNE_BRETON DEPUIS WEBSCRAP
+# 4. J'ajoute le nom_commune_breton depuis mon dataframe WebScrap
 
 web_cols = df_result_WebScrap.columns.tolist()
 if 'nom_commune' in web_cols and 'nom_commune_breton' in web_cols:
@@ -81,7 +80,7 @@ df_final['nom_commune_breton'] = df_final['nom_commune_breton'].fillna('')
 print(f"Ajout nom_commune_breton terminé : {df_final['nom_commune_breton'].astype(bool).sum()} valeurs connues")
 
 
-# 5 MISE À JOUR DEPUIS API (label_cite_caractere)
+# 5. Je fais mise à jour de mon dataframe final depuis mon dataframe API (label_cite_caractere)
 
 if 'label_cite_caractere' in df_result_API.columns:
     df_result_API['label_cite_caractere'] = df_result_API['label_cite_caractere'].astype(str).str.strip().str.lower().replace(
@@ -100,7 +99,7 @@ df_final['label_cite_caractere'] = df_final['label_cite_caractere'].fillna(0).as
 print(f"Champs API mis à jour : 'label_cite_caractere' ({df_final['label_cite_caractere'].sum()} communes labellisées)")
 
 
-# 6 MISE À JOUR DEPUIS SQLITE (nom_commune, nom_department)
+# 6. Je fais mise à jour de mon data frame final, df_final, en prenant en compte ma base de donnée source df_result_SQLite
 
 if 'code_insee' in df_final.columns and 'code_insee' in df_result_SQLite.columns:
     df_final = df_final.merge(df_result_SQLite, on='code_insee', how='left', suffixes=('', '_sqlite'))
@@ -112,7 +111,7 @@ if 'code_insee' in df_final.columns and 'code_insee' in df_result_SQLite.columns
     print("Champs SQLite mis à jour : 'nom_commune' et 'nom_department'")
 
 
-# 7 AJOUT NOM DEPARTEMENT BRETON (depuis WebScrap)
+# 7. J'ajoute le nom_department_breton à partir de mon df_result_WebScrap
 
 df_dept_bzh = df_result_WebScrap[['nom_department', 'nom_department_breton']].drop_duplicates()
 df_final = df_final.merge(
@@ -124,8 +123,7 @@ df_final['nom_department_breton'] = df_final['nom_department_breton'].fillna('')
 print(f"Ajout nom_department_breton terminé : {df_final['nom_department_breton'].astype(bool).sum()} valeurs connues")
 
 
-# 8 NETTOYAGE FINAL & timestamps
-
+# 8. Je fais une nettoyage finale et je corrige mes variables created_at et updated_at
 df_final = df_final.fillna('')
 clean_text_cols = ['nom_site', 'nom_commune', 'nom_commune_breton', 'nom_department', 'nom_department_breton']
 for col in clean_text_cols:
@@ -149,7 +147,7 @@ print(df_final.head())
 print(f"\nDataFrame final prêt pour l'insertion : {df_final.shape[0]} lignes")
 
 
-# 9 SAUVEGARDE DU DF FINAL EN CSV
+# 9. Je sauvegarde mon dataframe final en CSV
 
 output_dir = os.path.join(base_dir, "..", "data")
 os.makedirs(output_dir, exist_ok=True)

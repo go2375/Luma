@@ -3,8 +3,8 @@
 .env
 **/__pycache__/
 app/__pycache__/
-db/
-db_source/
+/db
+/db_source
 *.lock
 *.wt
 *.ns

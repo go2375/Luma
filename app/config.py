@@ -26,25 +26,3 @@ class Config:
 
     # Limitation du nombre maximum de tentatives de connexion pour assurer la sécurité côté login
     MAX_LOGIN_ATTEMPTS = 5
-
-    # RGPD
-    # Types de sites où les coordonnées GPS doivent être masquées
-    RESIDENTIAL_SITE_TYPES = [
-        'gite',
-        'chambre_hote',
-        'maison_privee',
-        'location_vacances'
-    ]
-    
-    # Types de sites où les coordonnées GPS peuvent être affichées
-    PUBLIC_SITE_TYPES = [
-        'monument',
-        'musee',
-        'parc',
-        'plage',
-        'chateau',
-        'eglise',
-        'site_naturel',
-        'port',
-        'jardin'
-    ]

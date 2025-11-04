@@ -40,6 +40,8 @@ for li in li_elements:
         if ":" in text:
             nom, nom_breton = map(str.strip, text.split(":", 1))
             data.append([nom, nom_breton])
+        # On définit une pause aléatoire pour temporisation du webscraping responsable
+        time.sleep(random.uniform(0.5, 1.5))
     except Exception as e:
         print(f"Erreur lecture li: {e}")
 

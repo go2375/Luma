@@ -32,30 +32,6 @@ from extract_CSV import df_CSV_copy
 def EDA_data_CSV(df, df_name="df_CSV_copy"):
     df_copy = df.copy(deep=True)
 
-    # 1. Sélection et renommage des colonnes utiles
-    df_copy = df_copy[[
-        'Updated', 
-        'SyndicObjectName', 
-        'GmapLatitude', 
-        'GmapLongitude', 
-        'DetailIDENTADRESSEINSEE', 
-        'DetailIDENTADRESSECOMMUNE', 
-        'DetailIDENTCATEGORIEACTSPORT', 
-        'DetailIDENTCATEGORIEACTCULT', 
-        'DetailIDENTDESCRIPTIONCOMMERCIALE',
-        'point_geo'
-    ]].rename(columns={
-        'Updated': 'updated_at',
-        'SyndicObjectName': 'nom_site',
-        'GmapLatitude': 'latitude',
-        'GmapLongitude': 'longitude',
-        'DetailIDENTADRESSEINSEE': 'code_insee',
-        'DetailIDENTADRESSECOMMUNE': 'nom_commune',
-        'DetailIDENTCATEGORIEACTSPORT': 'act_sport',
-        'DetailIDENTCATEGORIEACTCULT': 'act_cult',
-        'DetailIDENTDESCRIPTIONCOMMERCIALE': 'description'
-    })
-
     # Type code_insee et nom_commune
     df_copy['code_insee'] = df_copy['code_insee'].astype(str)
     df_copy['nom_commune'] = df_copy['nom_commune'].fillna('Inconnu')

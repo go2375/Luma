@@ -1,52 +1,76 @@
 from functools import wraps
 from fastapi import Request, HTTPException
 from app.auth import AuthService
+import inspect
 
-# Permet de créer un décorateur pour protéger une route Flask avec authentification JWT.
-# Permet de vérifier la présence et la validité d'un token dans les headers Authorization,
-# ainsi que permet de passer les données utilisateur décodées à la fonction décorée.
-def token_required(f):
-    @wraps(f)
-    async def wrapper(*args, request: Request, **kwargs):
-        
-        # Permet de récupérer le token depuis les headers Authorization
+def token_required(func):
+    """
+    Décorateur FastAPI : protège une route avec authentification JWT.
+    Vérifie la présence et la validité du token dans les headers "Authorization".
+    Passe l'utilisateur décodé à la fonction décorée via current_user.
+    """
+    @wraps(func)
+    async def wrapper(request: Request, *args, **kwargs):
+        # Récupération du header Authorization
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             raise HTTPException(status_code=401, detail="Token manquant. Authentification requise.")
-        
+
         parts = auth_header.split()
         if len(parts) != 2 or parts[0].lower() != "bearer":
             raise HTTPException(status_code=401, detail="Format de token invalide. Utilisez: Bearer <token>")
 
         token = parts[1]
 
-        # On vérifie le token
+        # Vérification et décodage du token
         result = AuthService.decode_token(token)
-        # Si pas de token trouvé un message de notification s'affiche
         if not result["success"]:
             raise HTTPException(status_code=401, detail=result["error"])
-        
-        # Permet de passer les données utilisateur à la fonction protégée
-        return await f(*args, current_user=result["data"], request=request, **kwargs)
- 
+
+        user_data = result["data"]
+
+        # Normalisation du rôle : on s'assure que 'role' existe
+        if "nom_role" in user_data:
+            user_data["role"] = user_data.pop("nom_role")
+        elif "role" not in user_data:
+            # si aucun rôle n'existe, mettre un rôle vide
+            user_data["role"] = ""
+
+        # Appel dynamique (supporte sync et async)
+        if inspect.iscoroutinefunction(func):
+            return await func(*args, current_user=user_data, request=request, **kwargs)
+        else:
+            return func(*args, current_user=user_data, request=request, **kwargs)
+
     return wrapper
 
-# Permet de créer un décorateur pour restreindre l'accès à certains rôles utilisateur, 
-# mais nécessite que la route soit déjà protégée par @token_required.
+
 def role_required(*allowed_roles):
-    def decorator(f):
-        @wraps(f)
-        async def wrapper(*args, current_user: dict, **kwargs):
-            user_role = current_user.get("role")
-            if user_role not in allowed_roles:
+    """
+    Décorateur FastAPI : restreint l’accès à certaines routes selon le rôle utilisateur.
+    Nécessite l’utilisation préalable de @token_required.
+    """
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, current_user: dict = None, **kwargs):
+            # Récupère le rôle depuis 'role' normalisé
+            user_role = current_user.get("role") if current_user else None
+
+            if not user_role or user_role not in allowed_roles:
                 raise HTTPException(
                     status_code=403,
                     detail={
-                    "error": "Accès refusé - Permissions insuffisantes",
-                    "roles_autorises": list(allowed_roles),
-                    "votre_role": user_role
+                        "error": "Accès refusé - Permissions insuffisantes",
+                        "roles_autorises": list(allowed_roles),
+                        "votre_role": user_role
                     }
                 )
-            return await f(*args, current_user=current_user, **kwargs)
+
+            # Appel dynamique (supporte sync et async)
+            if inspect.iscoroutinefunction(func):
+                return await func(*args, current_user=current_user, **kwargs)
+            else:
+                return func(*args, current_user=current_user, **kwargs)
+
         return wrapper
     return decorator

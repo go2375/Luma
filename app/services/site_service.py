@@ -1,85 +1,109 @@
-from app.models import SiteModel, CommuneModel
+from app.models import SiteModel, CommuneModel, UserModel
 from app.anonymization import site_to_public_dict, site_to_prestataire_dict
 
-# Permet de créer un service de gestion des sites touristiques
+# ===== Service de gestion des sites touristiques =====
 class SiteService:
+
     @staticmethod
-    # Permet de récupérer tous les sites pour affichage public (anonymisés)
     def get_all_sites_public():
+        """
+        Récupère tous les sites pour affichage public.
+        Les données sensibles (GPS, prestataire) sont anonymisées.
+        """
         sites = SiteModel.get_all(include_prestataire=False)
-        # On anonymise les données sensibles
+        # On anonymise les données sensibles pour chaque site
         return [site_to_public_dict(site) for site in sites]
-    
+
     @staticmethod
-    # Permet de récupérer un site par ID pour affichage public (anonymisé)
     def get_site_by_id_public(site_id: int):
+        """
+        Récupère un site spécifique pour affichage public (anonymisé).
+        """
         site = SiteModel.get_by_id(site_id, include_prestataire=False)
         if not site:
-            return None
+            return {"success": False, "error": "Site introuvable"}
         
-        return site_to_public_dict(site)
-    
+        return {"success": True, "site": site_to_public_dict(site)}
+
     @staticmethod
-    # Permet de récupérer tous les sites d'un prestataire, incluant ses données complètes
     def get_sites_by_prestataire(prestataire_id: int):
+        """
+        Récupère tous les sites d'un prestataire avec données complètes.
+        Vérifie que le prestataire existe.
+        """
+        prestataire = UserModel.get_by_id(prestataire_id)
+        if not prestataire:
+            return {"success": False, "error": "Prestataire introuvable ou token invalide"}
+
         sites = SiteModel.get_by_prestataire(prestataire_id)
-        return [site_to_prestataire_dict(site) for site in sites]
-    
+        return {"success": True, "sites": [site_to_prestataire_dict(site) for site in sites]}
+
     @staticmethod
-    # Permet de créer un nouveau site touristique
     def create_site(nom_site: str, commune_id: int, prestataire_id: int = None, **kwargs):
-        # On valide la présence du nom du site
-        if not nom_site.strip():
+        """
+        Crée un nouveau site touristique.
+        Vérifie la commune et le prestataire.
+        Les champs est_activite et est_lieu remplacent type_site.
+        """
+        if not nom_site or not nom_site.strip():
             return {"success": False, "error": "Le nom du site est requis"}
-        
-        # On vérifie que la commune existe
+
+        # Vérifie que la commune existe
         communes = CommuneModel.get_all()
         if not any(c["commune_id"] == commune_id for c in communes):
-            return {'success': False, 'error': 'Commune introuvable'}
-        
+            return {"success": False, "error": "Commune introuvable"}
+
+        # Vérifie prestataire si fourni
+        if prestataire_id and not UserModel.get_by_id(prestataire_id):
+            return {"success": False, "error": "Prestataire introuvable ou token invalide"}
+
         try:
             site = SiteModel.create(
                 nom_site=nom_site.strip(),
                 commune_id=commune_id,
                 prestataire_id=prestataire_id,
-                type_site=kwargs.get("type_site"),
+                est_activite=kwargs.get("est_activite", False),
+                est_lieu=kwargs.get("est_lieu", False),
                 description=kwargs.get("description"),
                 latitude=kwargs.get("latitude"),
                 longitude=kwargs.get("longitude")
             )
             return {"success": True, "site": site}
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    
+            return {"success": False, "error": f"Erreur lors de la création: {str(e)}"}
+
     @staticmethod
-    # Permet de modifier un site touristique appartenant à un prestataire
     def update_site(site_id: int, prestataire_id: int, **kwargs):
-        # On vérifie que le site existe et appartient au prestataire
+        """
+        Modifie un site touristique.
+        Vérifie que le site appartient au prestataire.
+        """
         site = SiteModel.get_by_id(site_id, include_prestataire=True)
         if not site:
             return {"success": False, "error": "Site introuvable"}
-        
+
         if site.get("prestataire_id") != prestataire_id:
             return {"success": False, "error": "Accès refusé - Ce site ne vous appartient pas"}
-        
-        # On effectue une mise à jour
-        success = SiteModel.update(site_id, **kwargs)
-        
+
+        # Mise à jour des champs autorisés
+        allowed_fields = ["nom_site", "description", "est_activite", "est_lieu", "latitude", "longitude"]
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+
+        success = SiteModel.update(site_id, **updates)
         return {"success": success, "error": None if success else "Échec de la mise à jour"}
-    
+
     @staticmethod
-    # Permet de marquer un site touristique comme supprimé
     def delete_site(site_id: int, prestataire_id: int):
-        # On vérifie que le site existe et appartient au prestataire
+        """
+        Marque un site comme supprimé.
+        Vérifie que le site appartient au prestataire.
+        """
         site = SiteModel.get_by_id(site_id, include_prestataire=True)
         if not site:
             return {"success": False, "error": "Site introuvable"}
-        
-        if site.get('prestataire_id') != prestataire_id:
+
+        if site.get("prestataire_id") != prestataire_id:
             return {"success": False, "error": "Accès refusé - Ce site ne vous appartient pas"}
-        
-        # On marque un site comme supprimé
-        success = SiteModel.delete(site_id)
-        
+
         success = SiteModel.delete(site_id)
         return {"success": success, "error": None if success else "Échec de la suppression"}

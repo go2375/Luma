@@ -3,8 +3,8 @@ import sqlite3
 import pandas as pd
 
 
-# 1 Chemins
 
+# Je définis le chemin pour récuperer mes données du df_aggregated_result
 csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "df_aggregated_result.csv"))
 if not os.path.exists(csv_path):
     raise FileNotFoundError(f" CSV introuvable : {csv_path}")
@@ -15,13 +15,13 @@ os.makedirs(bdd_dir, exist_ok=True)
 sqlite_path = os.path.join(bdd_dir, "bdd_connexion.sqlite")
 
 
-# 2 Chargement du CSV
+# Je charge le CSV
 
 df_final = pd.read_csv(csv_path, encoding="utf-8-sig")
 print(f" CSV chargé : {len(df_final)} lignes")
 
 
-# 3 Connexion SQLite
+# Je gère la connexion à SQLite
 
 conn = sqlite3.connect(sqlite_path)
 cur = conn.cursor()
@@ -29,7 +29,7 @@ cur.execute("PRAGMA foreign_keys = ON;")
 print(f" Connexion SQLite : {sqlite_path}")
 
 
-# 4 Création des tables
+# Je crée des tables
 
 cur.executescript("""
 CREATE TABLE IF NOT EXISTS Role(
@@ -121,7 +121,7 @@ conn.commit()
 print(" Tables créées ou vérifiées")
 
 
-# 5 Insertion des rôles
+# Permet l'insertion des rôles
 
 roles = [("admin",), ("visiteur",), ("prestataire",)]
 cur.executemany("INSERT OR IGNORE INTO Role (nom_role) VALUES (?);", roles)
@@ -129,9 +129,9 @@ conn.commit()
 print("✓ Rôles insérés")
 
 
-# 6 Insertion des départements
+# Permet l'insertion des départements
 
-# Assurer que Côtes-d’Armor existe avec le bon nom breton
+# Permet s'assurer que Côtes-d’Armor existe avec le bon nom breton
 df_final.loc[len(df_final)] = {
     "nom_department": "Côtes-d'Armor",
     "nom_department_breton": "Aodoù-an-Arvor"
@@ -152,7 +152,7 @@ cur.execute("SELECT department_id, nom_department FROM Department;")
 dept_map = {nom: did for did, nom in cur.fetchall()}
 print(f"✓ {len(df_dept)} départements insérés/mis à jour (Côtes-d’Armor inclus)")
 
-# 7 Insertion des communes
+# Permet l'insertion des communes
 
 df_commune = df_final[["nom_commune", "nom_commune_breton", "code_insee", "label_cite_caractere", "nom_department"]].drop_duplicates()
 df_commune = df_commune[df_commune["nom_commune"].notna() & (df_commune["nom_commune"].str.strip() != "")]
@@ -176,7 +176,7 @@ commune_map = {nom: cid for cid, nom in cur.fetchall()}
 print(f"✓ {len(df_commune)} communes insérées")
 
 
-# 8 Insertion des sites touristiques avec created_at et updated_at
+# Permet l'insertion des sites touristiques avec created_at et updated_at
 
 df_sites = df_final[["nom_site", "est_activite", "est_lieu", "description", "latitude", "longitude",
                      "nom_commune", "created_at", "updated_at"]].drop_duplicates()
@@ -187,7 +187,9 @@ for _, row in df_sites.iterrows():
     if pd.notna(row["commune_id"]):
         cur.execute("""
             INSERT OR IGNORE INTO Site_Touristique
-            (nom_site, est_activite, est_lieu, description, latitude, longitude, commune_id, created_at, updated_at)
+            (nom_site, est_activite, est_lieu, description, 
+            latitude, longitude, commune_id, 
+            created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             row["nom_site"],
@@ -204,7 +206,7 @@ conn.commit()
 print(f"✓ {len(df_sites)} sites touristiques insérés")
 
 
-# 9 Vérification finale
+# Permet une vérification finale
 
 print("\n Récapitulatif des lignes dans chaque table :")
 for table in ["Role", "Utilisateur", "Department", "Commune", "Site_Touristique", "Parcours", "Parcours_Site"]:

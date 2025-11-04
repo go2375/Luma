@@ -8,6 +8,8 @@ from app.routes.prestataire_routes import router as prestataire_router
 from app.routes.public_routes import router as public_router
 from app.anonymization import check_and_fix_all_usernames
 from app.config import Config
+import uvicorn
+
 
 # On vérifie RGPD avant lancement
 check_and_fix_all_usernames()
@@ -19,10 +21,20 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# On gère middleware CORS
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+
+app = FastAPI()
+
+origins = [
+    "http://localhost:3000",  # ton frontend
+    "http://localhost:8081",  # si tu veux tester Swagger UI
+    # "*",  # autorise tout (pas recommandé en prod)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=Config.CORS_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,3 +81,12 @@ def custom_openapi():
 
 # On applique notre configuration personnalisée
 app.openapi = custom_openapi
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8081,
+        reload=True,
+        debug=True  # active les logs détaillés
+    )
