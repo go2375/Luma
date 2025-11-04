@@ -1,33 +1,28 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.models import APIKey, APIKeyIn, SecuritySchemeType
 from fastapi.openapi.utils import get_openapi
 from app.routes.auth_routes import router as auth_router
 from app.routes.admin_routes import router as admin_router
 from app.routes.prestataire_routes import router as prestataire_router
 from app.routes.public_routes import router as public_router
 from app.anonymization import check_and_fix_all_usernames
-from app.config import Config
 import uvicorn
 
 
-# On vérifie RGPD avant lancement
+# Vérification RGPD au démarrage
 check_and_fix_all_usernames()
 
-# On crée l’application FastAPI
+# Création de l'application
 app = FastAPI(
     title="API Luméa",
     description="API REST pour la gestion des sites touristiques et des utilisateurs",
-    version="1.0.0"
+    version="1.0.0",
 )
 
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
-
+# --- Configuration CORS ---
 origins = [
-    "http://localhost:3000",  # ton frontend
-    "http://localhost:8081",  # si tu veux tester Swagger UI
-    # "*",  # autorise tout (pas recommandé en prod)
+    "http://localhost:3000",  # ton frontend React ou autre
+    "http://localhost:8081"  # Swagger UI local
 ]
 
 app.add_middleware(
@@ -38,22 +33,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Permet d'inclure des routers
+# --- Inclusion des routers ---
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(prestataire_router)
 app.include_router(public_router)
 
-# On gère Health Check
+# --- Health Check ---
 @app.get("/api/health", tags=["Default"])
 def health_check():
     """Vérifie l’état de santé de l’API."""
     return {"status": "ok", "message": "API Luméa fonctionne correctement"}
 
-# Permet de  configurer avec bearer token
+
+# --- Configuration OpenAPI avec Bearer Token ---
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
+
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
@@ -61,7 +58,6 @@ def custom_openapi():
         routes=app.routes,
     )
 
-    # On Ajoute le schéma d’authentification Bearer
     openapi_schema["components"]["securitySchemes"] = {
         "BearerAuth": {
             "type": "http",
@@ -71,20 +67,21 @@ def custom_openapi():
         }
     }
 
-    # On applique automatiquement la sécurité aux routes protégées
+    # Applique le schéma JWT à toutes les routes par défaut
     openapi_schema["security"] = [{"BearerAuth": []}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
 
-# On applique notre configuration personnalisée
+# On remplace le générateur OpenAPI par le nôtre
 app.openapi = custom_openapi
 
+# --- Point d'entrée ---
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8081,
         reload=True,
-        debug=True  # active les logs détaillés
+        log_level="info"
     )
