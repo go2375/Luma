@@ -29,32 +29,50 @@ def token_required(func):
 
         user_data = result["data"]
 
-        # Normalisation du rôle : on s'assure que 'role' existe
-        if "nom_role" in user_data:
-            user_data["role"] = user_data.pop("nom_role")
-        elif "role" not in user_data:
-            # si aucun rôle n'existe, mettre un rôle vide
-            user_data["role"] = ""
+        # CORRECTION: Le token contient déjà "role", pas besoin de normalisation
+        # Supprimez cette partie qui causait le problème :
+        # if "nom_role" in user_data:
+        #     user_data["role"] = user_data.pop("nom_role")
+        # elif "role" not in user_data:
+        #     user_data["role"] = ""
+        
+        # Le rôle est déjà dans user_data["role"]
+        
+        # On ajoute current_user dans kwargs seulement s'il n'existe pas déjà
+        if "current_user" not in kwargs:
+            kwargs["current_user"] = user_data
+        
+        # On ajoute request dans kwargs seulement s'il n'existe pas déjà
+        if "request" not in kwargs:
+            kwargs["request"] = request
 
         # Appel dynamique (supporte sync et async)
         if inspect.iscoroutinefunction(func):
-            return await func(*args, current_user=user_data, request=request, **kwargs)
+            return await func(*args, **kwargs)
         else:
-            return func(*args, current_user=user_data, request=request, **kwargs)
+            return func(*args, **kwargs)
 
     return wrapper
 
-
 def role_required(*allowed_roles):
     """
-    Décorateur FastAPI : restreint l’accès à certaines routes selon le rôle utilisateur.
-    Nécessite l’utilisation préalable de @token_required.
+    Décorateur FastAPI : restreint l'accès à certaines routes selon le rôle utilisateur.
+    Nécessite l'utilisation préalable de @token_required.
     """
     def decorator(func):
         @wraps(func)
-        async def wrapper(*args, current_user: dict = None, **kwargs):
+        async def wrapper(*args, **kwargs):
+            # Récupère current_user depuis kwargs (injecté par @token_required)
+            current_user = kwargs.get("current_user")
+            
+            if not current_user:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Utilisateur non authentifié. Utilisez @token_required avant @role_required."
+                )
+            
             # Récupère le rôle depuis 'role' normalisé
-            user_role = current_user.get("role") if current_user else None
+            user_role = current_user.get("role")
 
             if not user_role or user_role not in allowed_roles:
                 raise HTTPException(
@@ -68,9 +86,9 @@ def role_required(*allowed_roles):
 
             # Appel dynamique (supporte sync et async)
             if inspect.iscoroutinefunction(func):
-                return await func(*args, current_user=current_user, **kwargs)
+                return await func(*args, **kwargs)
             else:
-                return func(*args, current_user=current_user, **kwargs)
+                return func(*args, **kwargs)
 
         return wrapper
     return decorator
