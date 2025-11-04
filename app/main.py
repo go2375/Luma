@@ -24,8 +24,6 @@ app = FastAPI(
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 
-app = FastAPI()
-
 origins = [
     "http://localhost:3000",  # ton frontend
     "http://localhost:8081",  # si tu veux tester Swagger UI
