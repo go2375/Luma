@@ -88,17 +88,21 @@ Lumea/
 1. Cloner le dépôt
    ---
 git clone https://github.com/go2375/Lumea.git
+
 cd Lumea
 
 3. Créer et activer l’environnement virtuel
    ---
 python -m venv venv
+
 source venv/bin/activate  # Linux/macOS
 
 5. Installer les dépendances
    ---
 pip install --upgrade pip
+
 pip install -r requirements.txt
+
 
 Vérifier aussi l'installation des dépendances pour Web Scraping :
 - Vérifiez la version de Chrome :
@@ -112,6 +116,7 @@ Si la commande renvoie command not found, Chrome n’est pas installé ou le che
 Ubuntu / Debian :
 
 sudo apt update
+
 sudo apt install google-chrome-stable
 
 - Forcer la mise à jour de webdriver-manager si nécessaire :
@@ -124,6 +129,7 @@ Cela évite les erreurs de WebDriver lors du lancement de Selenium et garantit u
 5. Configurer les variables d'environnement
     ---
 - Créez un fichier .env à la racine du projet.
+
 - Ajoutez et modifiez les variables suivantes :
 
 SECRET_KEY=<votre_clef_secrète>
@@ -134,11 +140,13 @@ MONGO_URI=<votre_uri_mongodb>
 6. Lancer MongoDB via Docker
     ---
 sudo docker-compose up -d
+
 Créez ensuite la base POI et la collection Points dans MongoDB.
 
 8. Exécuter le pipeline ETL complet
     ---
 cd Lumea/etl
+
 python3 etl_pipeline.py
 
 Ce script :
