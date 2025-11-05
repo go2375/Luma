@@ -54,13 +54,15 @@ def EDA_data_WebScrap(df, df_name="df_WebScrap", n_departments=4):
     if not na_table[na_table['Nb NaN']>0].empty:
         print("\nValeurs manquantes détectées :")
         print(na_table[na_table['Nb NaN']>0])
-        plt.figure(figsize=(10,4))
-        sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
-        plt.title(f"Heatmap des valeurs manquantes ({df_name})")
-        plt.tight_layout()
-        plt.show(block=False)
-        plt.pause(0.1)
-        plt.close()
+
+        # Pour notre ETL automatisé l’affichage en pause
+        # plt.figure(figsize=(10,4))
+        # sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
+        # plt.title(f"Heatmap des valeurs manquantes ({df_name})")
+        # plt.tight_layout()
+        # plt.show(block=False)
+        # plt.pause(0.1)
+        # plt.close()
     else:
         print("\nAucune valeur manquante détectée")
 

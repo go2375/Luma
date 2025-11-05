@@ -55,14 +55,14 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     df_copy['created_at'] = df_copy['updated_at'].fillna(today)
     df_copy['updated_at'] = df_copy['updated_at'].fillna(today)
 
-    # 5. Heatmap valeurs manquantes
-    plt.figure(figsize=(10,4))
-    sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
-    plt.title(f"Heatmap des valeurs manquantes ({df_name})")
-    plt.tight_layout()
-    plt.show(block=False)
-    plt.pause(0.1)
-    plt.close()
+    # 5. Heatmap valeurs manquantes : Pour notre ETL automatisé l’affichage en pause
+    # plt.figure(figsize=(10,4))
+    # sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
+    # plt.title(f"Heatmap des valeurs manquantes ({df_name})")
+    # plt.tight_layout()
+    # plt.show(block=False)
+    # plt.pause(0.1)
+    # plt.close()
 
     # 6. Remplissage valeurs manquantes
     df_copy['type_site'] = df_copy['type_site'].replace('', 'Autre').fillna('Autre')
@@ -126,20 +126,39 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     print(f"Lignes supprimées car nom_site manquant après remplissage : {before_drop - after_drop}")
 
     # 14. Anonymisation nom_site et description
-    def anonymize_nom_site(row):
-        nom_site = row.get('nom_site','')
+    # 1) Calculer les masques avant modification
+    orig_nom = df_copy['nom_site'].astype(str).fillna('')
+    orig_desc = df_copy['description'].astype(str).fillna('')
+
+    mask_nom = orig_nom.apply(lambda x: bool(re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", x)))
+    mask_desc = orig_desc.apply(lambda x: bool(re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", x)))
+
+    # 2) Créer la colonne anonymized à 0 par défaut
+    df_copy['anonymized'] = 0
+
+    # 3) Fonctions d'anonymisation
+    def anonymize_nom_site_row(row):
+        nom_site = row.get('nom_site', '')
         site_id = row.name
-        if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", nom_site):
+        if re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", str(nom_site)):
             return f"Site touristique #{site_id}"
         return nom_site
-    def anonymize_description(desc):
-        if pd.isna(desc) or desc.strip()=="":
+
+    def anonymize_description_text(text):
+        if pd.isna(text) or str(text).strip() == "":
             return "Description non renseignée"
-        if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", desc):
+        if re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", str(text)):
             return "Description disponible sur demande"
-        return desc
-    df_copy['nom_site'] = df_copy.apply(anonymize_nom_site, axis=1)
-    df_copy['description'] = df_copy['description'].apply(anonymize_description)
+        return text
+
+    # 4) Appliquer l'anonymisation
+    df_copy['nom_site'] = df_copy.apply(anonymize_nom_site_row, axis=1)
+    df_copy['description'] = df_copy['description'].apply(anonymize_description_text)
+
+    # 5) Marquer les lignes anonymisées
+    df_copy.loc[mask_nom | mask_desc, 'anonymized'] = 1
+
+    print(f"[{df_name}] Anonymisation BigData effectuée sur {int(df_copy['anonymized'].sum())} lignes.")
 
     # 15. Normalisation avancée type_site
     def remove_internal_dup(type_str):
@@ -190,10 +209,10 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     return df_copy
 
 
-# Exécution EDA et sauvegarde CSV
+# Exécution de la transformation et sauvegarde CSV
 
 if __name__ == "__main__":
-    print("\nDémarrage de l'EDA pour df_BigData\n")
+    print("\nDémarrage de la transformation pour df_BigData\n")
 
     df_result_BigData = EDA_data_BigData(df_BigData_copy, df_name="df_BigData_copy")
 

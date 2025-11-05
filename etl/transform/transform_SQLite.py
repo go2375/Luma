@@ -50,13 +50,14 @@ def EDA_data_SQLite(df, df_name="df_SQLite_copy"):
         print("\nValeurs manquantes détectées :")
         print(na_table[na_table['Nb NaN'] > 0])
 
-        plt.figure(figsize=(10, 4))
-        sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
-        plt.title(f"Heatmap des valeurs manquantes ({df_name})")
-        plt.xlabel("Colonnes")
-        plt.ylabel("Lignes")
-        plt.tight_layout()
-        plt.show()
+        # Pour notre ETL automatisé l’affichage en pause
+        # plt.figure(figsize=(10, 4))
+        # sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
+        # plt.title(f"Heatmap des valeurs manquantes ({df_name})")
+        # plt.xlabel("Colonnes")
+        # plt.ylabel("Lignes")
+        # plt.tight_layout()
+        # plt.show()
 
         # Traitement simplifié des valeurs manquantes
         for col in df_copy.columns:

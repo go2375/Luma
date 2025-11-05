@@ -45,13 +45,14 @@ def EDA_data_CSV(df, df_name="df_CSV_copy"):
     print("\nValeurs manquantes détectées avant traitement :")
     print(na_counts[na_counts > 0])
 
-    plt.figure(figsize=(10,4))
-    sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
-    plt.title(f"Heatmap des valeurs manquantes ({df_name})")
-    plt.tight_layout()
-    plt.show(block=False)
-    plt.pause(0.1)
-    plt.close()
+    # Pour notre ETL automatisé l’affichage en pause
+    # plt.figure(figsize=(10,4))
+    # sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
+    # plt.title(f"Heatmap des valeurs manquantes ({df_name})")
+    # plt.tight_layout()
+    # plt.show(block=False)
+    # plt.pause(0.1)
+    # plt.close()
 
     # 3. Remplissage latitude/longitude depuis point_geo
     def fill_lat_lon(row):
@@ -82,25 +83,41 @@ def EDA_data_CSV(df, df_name="df_CSV_copy"):
     # 6. Création de la colonne est_activite
     df_copy['est_activite'] = True
 
-    # 7. Anonymisation du nom_site et description
-    def anonymize_nom_site(row):
+        #7. Anonymisation
+        #1) Calculer les masques AVANT toute modification
+    orig_nom = df_copy['nom_site'].astype(str).fillna('')
+    orig_desc = df_copy['description'].astype(str).fillna('')
+
+    mask_nom = orig_nom.apply(lambda x: bool(re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", x)))
+    mask_desc = orig_desc.apply(lambda x: bool(re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", x)))
+
+    # 2) Initialiser la colonne anonymized à 0
+    df_copy['anonymized'] = 0
+
+    # 3) Appliquer l'anonymisation sur nom_site et description
+    def anonymize_nom_site_row(row):
         nom_site = row.get('nom_site','')
         site_id = row.name
-        if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", nom_site):
-            return f"Activité touristique #{site_id+1}"
+        if re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", str(nom_site)):
+            return f"Activité touristique #{site_id+1}"  # ou "Site touristique #id" pour BigData
         return nom_site
 
-    def anonymize_description(desc):
-        if pd.isna(desc) or desc.strip()=="":
+    def anonymize_description_text(text):
+        if pd.isna(text) or str(text).strip() == "":
             return "Description non renseignée"
-        if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", desc):
+        if re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", str(text)):
             return "Description disponible sur demande"
-        return desc
+        return text
 
-    df_copy['nom_site'] = df_copy.apply(anonymize_nom_site, axis=1)
-    df_copy['description'] = df_copy['description'].apply(anonymize_description)
+    df_copy['nom_site'] = df_copy.apply(anonymize_nom_site_row, axis=1)
+    df_copy['description'] = df_copy['description'].apply(anonymize_description_text)
 
-    # 8. Suppression colonnes inutiles
+    # 4) Marquer anonymized = 1 pour toutes les lignes détectées initialement
+    df_copy.loc[mask_nom | mask_desc, 'anonymized'] = 1
+
+    print(f"[{df_name}] Anonymisation effectuée sur {int(df_copy['anonymized'].sum())} lignes.")
+
+        # 8. Suppression colonnes inutiles
     df_copy = df_copy.drop(columns=['act_sport', 'act_cult', 'point_geo'])
 
     # 9. Ajout created_at et normalisation types
