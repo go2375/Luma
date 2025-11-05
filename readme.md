@@ -100,9 +100,29 @@ source venv/bin/activate  # Linux/macOS
 pip install --upgrade pip
 pip install -r requirements.txt
 
-Vérifier aussi l'installation des dépendances pour WebScraping :
+Vérifier aussi l'installation des dépendances pour Web Scraping :
+- Vérifiez la version de Chrome :
+
+google-chrome --version    # Linux/macOS
+
+Si la commande renvoie command not found, Chrome n’est pas installé ou le chemin n’est pas configuré.
+
+- Installer ou réinstaller Chrome :
+
+Ubuntu / Debian :
+
+sudo apt update
+sudo apt install google-chrome-stable
+
+- Forcer la mise à jour de webdriver-manager si nécessaire :
+
+pip install --upgrade webdriver-manager
+
+Cette commande permet de s’assurer que vous utilisez la dernière version de webdriver-manager, compatible avec votre version de Chrome.
+Cela évite les erreurs de WebDriver lors du lancement de Selenium et garantit une meilleure compatibilité et stabilité pour vos scripts de Web Scraping.
 
 5. Configurer les variables d'environnement
+    ---
 - Créez un fichier .env à la racine du projet.
 - Ajoutez et modifiez les variables suivantes :
 
@@ -112,10 +132,12 @@ DATABASE_URL=<votre_url_sqlite_ou_postgresql>
 MONGO_URI=<votre_uri_mongodb>
 
 6. Lancer MongoDB via Docker
+    ---
 sudo docker-compose up -d
 Créez ensuite la base POI et la collection Points dans MongoDB.
 
-7. Exécuter le pipeline ETL complet
+8. Exécuter le pipeline ETL complet
+    ---
 cd Lumea/etl
 python3 etl_pipeline.py
 
@@ -126,6 +148,7 @@ Ce script :
 - Crée la base SQLite et y charge les données.
   
 8. Lancer l’API Luméa
+    ---
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 
 L’API est accessible : http://127.0.0.1:8000/docs
