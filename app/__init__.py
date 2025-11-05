@@ -4,7 +4,6 @@ from fastapi.responses import JSONResponse
 from app.config import Config
 from app.routes.auth_routes import router as auth_router
 from app.routes.admin_routes import router as admin_router
-from app.routes.prestataire_routes import router as prestataire_router
 from app.routes.public_routes import router as public_router
 from app.auth import AuthService  # service JWT
 
@@ -25,13 +24,14 @@ def create_app() -> FastAPI:
     async def decode_jwt_middleware(request: Request, call_next):
         """
         Middleware pour décoder le JWT et stocker l'utilisateur dans request.state.user.
-        Les routes publiques et Swagger sont ignorées ici.
+        Les routes publiques sont ignorées ici.
         """
         public_paths = [
             "/api/health",
             "/api/auth/login",
             "/api/auth/register",
             "/api/sites",
+            "/api/parcours",
             "/api/communes",
             "/api/departments",
             "/docs",
@@ -51,7 +51,7 @@ def create_app() -> FastAPI:
 
         token = auth_header.split(" ")[1]
         decoded = AuthService.decode_token(token)
-        if not decoded["success"]:
+        if not decoded.get("success"):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": decoded.get("error", "Token invalide")}
@@ -63,10 +63,10 @@ def create_app() -> FastAPI:
         return await call_next(request)
 
     # ===== Inclusion des routers =====
-    app.include_router(auth_router)
-    app.include_router(admin_router)
-    app.include_router(prestataire_router)
-    app.include_router(public_router)
+    app.include_router(auth_router)    # login / register
+    app.include_router(admin_router)   # admin parcours seulement
+    # app.include_router(prestataire_router)  # désactivé pour l'instant
+    app.include_router(public_router)   # sites et parcours publics
 
     # ===== Health Check =====
     @app.get("/api/health", tags=["Health"])
@@ -81,3 +81,7 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=status_code, content={"detail": detail})
 
     return app
+
+
+# Pour lancer directement
+app = create_app()

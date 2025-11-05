@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.services.user_service import UserService
 from app.auth import AuthService
-from app.decorators import token_required, role_required
 
 router = APIRouter(prefix="/api/auth", tags=["Authentification"])
 
@@ -10,7 +9,7 @@ router = APIRouter(prefix="/api/auth", tags=["Authentification"])
 class RegisterSchema(BaseModel):
     username: str
     password: str
-    role_id: int  # rôle par défaut pour un utilisateur
+    # On supprime role_id envoyé par l'utilisateur pour éviter qu'il s'attribue un rôle admin
 
 class LoginSchema(BaseModel):
     username: str
@@ -20,22 +19,36 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-# ===== Register =====
+# ===== Routes =====
 @router.post("/register", response_model=dict)
 def register(data: RegisterSchema):
-    existing_user = UserService.get_by_username(data.username)
-    if existing_user:
+    # Vérifie si le username existe déjà
+    if UserService.get_by_username(data.username):
         raise HTTPException(status_code=400, detail="Nom d'utilisateur déjà utilisé")
 
-    user = UserService.create(data.username, data.password, data.role_id)
-    return {"message": f"Utilisateur {user['username']} créé avec succès", "user_id": user["user_id"]}
+    # Création de l'utilisateur avec rôle "visiteur" forcé
+    user = UserService.create(
+        username=data.username,
+        password=data.password,
+        role_id=2  # rôle visiteur
+    )
 
-# ===== Login =====
+    return {
+        "message": f"Utilisateur {user['username']} créé avec rôle visiteur",
+        "user_id": user["user_id"]
+    }
+
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginSchema):
     user = UserService.get_by_username(data.username)
     if not user or not AuthService.verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Nom d'utilisateur ou mot de passe incorrect")
 
-    token = AuthService.generate_token(user["user_id"], user["username"], user["nom_role"])
+    # Génère le token avec le rôle exact de l'utilisateur
+    token = AuthService.generate_token(
+        user_id=user["user_id"],
+        username=user["username"],
+        role=user["nom_role"]  # doit correspondre à "visiteur" ou autre
+    )
+
     return {"access_token": token}

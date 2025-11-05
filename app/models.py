@@ -208,17 +208,47 @@ class SiteModel:
 # =================== ParcoursModel ===================
 class ParcoursModel:
     @staticmethod
-    def get_all() -> List[Dict]:
+    def get_all(include_prestataire: bool = False) -> List[Dict]:
         with Database.get_connection() as conn:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM Parcours")
-            return [Database.dict_from_row(row) for row in cur.fetchall()]
+            cur.execute("""
+                SELECT p.parcours_id, p.nom_parcours, p.createur_id, u.username AS createur_nom
+                FROM Parcours p
+                JOIN Utilisateur u ON p.createur_id = u.user_id
+            """)
+            parcours_list = [Database.dict_from_row(row) for row in cur.fetchall()]
+
+            # Récupère les sites liés pour chaque parcours
+            for parcours in parcours_list:
+                cur.execute("""
+                    SELECT ps.ordre_visite, s.site_id, s.nom_site, s.est_activite, s.est_lieu, s.description,
+                           s.latitude, s.longitude, c.nom_commune, c.nom_commune_breton, d.nom_department, d.nom_department_breton
+                    FROM Parcours_Site ps
+                    JOIN Site_Touristique s ON ps.site_id = s.site_id
+                    JOIN Commune c ON s.commune_id = c.commune_id
+                    JOIN Department d ON c.department_id = d.department_id
+                    WHERE ps.parcours_id = ?
+                    ORDER BY ps.ordre_visite
+                """, (parcours["parcours_id"],))
+                sites = [Database.dict_from_row(row) for row in cur.fetchall()]
+                if not include_prestataire:
+                    for s in sites:
+                        s["latitude"] = None
+                        s["longitude"] = None
+                parcours["sites"] = sites
+
+            return parcours_list
 
     @staticmethod
     def get_by_id(parcours_id: int, include_prestataire: bool = False) -> Optional[Dict]:
         with Database.get_connection() as conn:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM Parcours WHERE parcours_id = ?", (parcours_id,))
+            cur.execute("""
+                SELECT p.parcours_id, p.nom_parcours, p.createur_id, u.username AS createur_nom
+                FROM Parcours p
+                JOIN Utilisateur u ON p.createur_id = u.user_id
+                WHERE p.parcours_id = ?
+            """, (parcours_id,))
             parcours = cur.fetchone()
             if not parcours:
                 return None
@@ -244,7 +274,7 @@ class ParcoursModel:
             return parcours_dict
 
     @staticmethod
-    def create(nom_parcours: str, createur_id: int, sites: List[Dict]) -> Dict:
+    def create(nom_parcours: str, createur_id: int, sites: Optional[List[Dict]] = None) -> Dict:
         with Database.get_connection() as conn:
             cur = conn.cursor()
             # Insertion du parcours
@@ -255,14 +285,44 @@ class ParcoursModel:
             parcours_id = cur.lastrowid
 
             # Insertion des sites associés
-            for site in sites:
-                cur.execute("""
-                    INSERT INTO Parcours_Site (parcours_id, site_id, ordre_visite)
-                    VALUES (?, ?, ?)
-                """, (parcours_id, site["site_id"], site["ordre_visite"]))
+            if sites:
+                for site in sites:
+                    cur.execute("""
+                        INSERT INTO Parcours_Site (parcours_id, site_id, ordre_visite)
+                        VALUES (?, ?, ?)
+                    """, (parcours_id, site["site_id"], site["ordre_visite"]))
 
             conn.commit()
-            return {"parcours_id": parcours_id, "nom_parcours": nom_parcours, "createur_id": createur_id, "sites": sites}
+            return {"parcours_id": parcours_id, "nom_parcours": nom_parcours, "createur_id": createur_id, "sites": sites or []}
+
+    @staticmethod
+    def update(parcours_id: int, **kwargs) -> bool:
+        """Met à jour un parcours (actuellement seul le nom est modifiable)."""
+        allowed_fields = ["nom_parcours"]
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
+        if not updates:
+            return False
+
+        set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
+        values = list(updates.values()) + [parcours_id]
+
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"UPDATE Parcours SET {set_clause} WHERE parcours_id = ?", values)
+            conn.commit()
+            return cur.rowcount > 0
+
+    @staticmethod
+    def delete(parcours_id: int) -> bool:
+        """Supprime un parcours et ses associations."""
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            # Supprime les liaisons Parcours_Site d'abord
+            cur.execute("DELETE FROM Parcours_Site WHERE parcours_id = ?", (parcours_id,))
+            # Puis supprime le parcours
+            cur.execute("DELETE FROM Parcours WHERE parcours_id = ?", (parcours_id,))
+            conn.commit()
+            return cur.rowcount > 0
 
 # =================== CommuneModel ===================
 class CommuneModel:

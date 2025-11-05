@@ -2,13 +2,13 @@ import jwt
 import bcrypt
 from datetime import datetime, timedelta
 from app.config import Config
-from typing import Union, Dict, Any
+from typing import Dict, Any, Union
 
 class AuthService:
     @staticmethod
     def hash_password(password: str) -> str:
         """
-        Hacher un mot de passe en utilisant bcrypt.
+        Hacher un mot de passe avec bcrypt.
         """
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
@@ -27,12 +27,14 @@ class AuthService:
         Générer un JWT pour un utilisateur avec expiration.
         """
         expiration = Config.JWT_EXPIRATION
+
         if isinstance(expiration, int):
             exp = datetime.utcnow() + timedelta(seconds=expiration)
         elif isinstance(expiration, timedelta):
             exp = datetime.utcnow() + expiration
         else:
-            exp = datetime.utcnow() + timedelta(hours=1)  # fallback 1h
+            # fallback par défaut 1h
+            exp = datetime.utcnow() + timedelta(hours=1)
 
         payload: Dict[str, Any] = {
             "user_id": user_id,
@@ -43,7 +45,6 @@ class AuthService:
         }
 
         token = jwt.encode(payload, Config.SECRET_KEY, algorithm="HS256")
-        # jwt.encode peut retourner bytes selon la version
         if isinstance(token, bytes):
             token = token.decode("utf-8")
         return token
@@ -61,8 +62,8 @@ class AuthService:
                 return {"success": False, "error": "Payload JWT incomplet"}
             return {"success": True, "data": payload}
         except jwt.ExpiredSignatureError:
-            return {"success": False, "error": "Token expiré. Veuillez vous reconnecter."}
+            return {"success": False, "error": "Token expiré. Reconnectez-vous."}
         except jwt.InvalidTokenError:
             return {"success": False, "error": "Token invalide"}
         except Exception as e:
-            return {"success": False, "error": f"Erreur lors du décodage du token: {str(e)}"}
+            return {"success": False, "error": f"Erreur décodage token: {str(e)}"}
