@@ -61,6 +61,7 @@ Lumea/
 │ └── load/
 │ │ └── bdd_create_and_load_to_SQLite.py
 │ ├── __init__.py
+│ └── etl_pipeline.py
 ├── BigData_load.py
 ├── SQLite_load.py
 ├── MCD_MLD_Lumea.png
