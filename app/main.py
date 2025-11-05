@@ -82,7 +82,7 @@ def custom_openapi():
     for path_item in openapi_schema["paths"].values():
         for method_item in path_item.values():
             tags = method_item.get("tags", [])
-            # On ne sécurise pas les routes publiques
+            # Ne sécurise pas les routes publiques ou health/auth
             if any(tag in ["Authentification", "Public", "Health"] for tag in tags):
                 continue
             method_item["security"] = [{"BearerAuth": []}]

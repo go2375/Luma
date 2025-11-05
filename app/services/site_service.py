@@ -1,6 +1,7 @@
 from app.models import SiteModel
 from app.anonymization import site_to_public_dict, site_to_prestataire_dict
 
+
 class SiteService:
     @staticmethod
     def get_all(include_prestataire: bool = False):
@@ -29,3 +30,7 @@ class SiteService:
         if not site:
             return None
         return site_to_public_dict(site)
+
+    @staticmethod
+    def create(**site_data):
+        return SiteModel.create(**site_data)

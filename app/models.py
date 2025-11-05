@@ -193,6 +193,18 @@ class SiteModel:
                 s_dict['longitude'] = None
             return s_dict
 
+    @staticmethod
+    def create(nom_site: str, commune_id: int, prestataire_id: Optional[int] = None, est_activite: Optional[bool] = False, est_lieu: Optional[bool] = False, description: Optional[str] = None, latitude: Optional[float] = None, longitude: Optional[float] = None) -> Dict:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO Site_Touristique (nom_site, commune_id, prestataire_id, est_activite, est_lieu, description, latitude, longitude)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (nom_site, commune_id, prestataire_id, est_activite, est_lieu, description, latitude, longitude))
+            conn.commit()
+            return {'site_id': cur.lastrowid, 'nom_site': nom_site, 'commune_id': commune_id, 'prestataire_id': prestataire_id}
+
+
 # =================== ParcoursModel ===================
 class ParcoursModel:
     @staticmethod
@@ -230,6 +242,27 @@ class ParcoursModel:
                     site['longitude'] = None
             parcours_dict['sites'] = sites
             return parcours_dict
+
+    @staticmethod
+    def create(nom_parcours: str, createur_id: int, sites: List[Dict]) -> Dict:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            # Insertion du parcours
+            cur.execute("""
+                INSERT INTO Parcours (nom_parcours, createur_id)
+                VALUES (?, ?)
+            """, (nom_parcours, createur_id))
+            parcours_id = cur.lastrowid
+
+            # Insertion des sites associés
+            for site in sites:
+                cur.execute("""
+                    INSERT INTO Parcours_Site (parcours_id, site_id, ordre_visite)
+                    VALUES (?, ?, ?)
+                """, (parcours_id, site["site_id"], site["ordre_visite"]))
+
+            conn.commit()
+            return {"parcours_id": parcours_id, "nom_parcours": nom_parcours, "createur_id": createur_id, "sites": sites}
 
 # =================== CommuneModel ===================
 class CommuneModel:
