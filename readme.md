@@ -86,18 +86,21 @@ Lumea/
 ## 🚀 Installation et lancement
 
 1. Cloner le dépôt
+   ---
 git clone https://github.com/go2375/Lumea.git
 cd Lumea
 
-2. Créer et activer l’environnement virtuel
+3. Créer et activer l’environnement virtuel
+   ---
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
 
-3. Installer les dépendances
+5. Installer les dépendances
+   ---
 pip install --upgrade pip
 pip install -r requirements.txt
 
-Vérifier aussi l'installation des dépendances pour WebScraping : 
+Vérifier aussi l'installation des dépendances pour WebScraping :
 
 5. Configurer les variables d'environnement
 - Créez un fichier .env à la racine du projet.
