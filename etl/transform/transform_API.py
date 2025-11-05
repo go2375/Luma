@@ -17,20 +17,16 @@ output_dir = os.path.join(base_dir, "..", "data")
 os.makedirs(output_dir, exist_ok=True)
 output_csv = os.path.join(output_dir, "df_API_transform_result.csv")
 
-
 # J'importe le dataframe depuis extract_API
-
 sys.path.append(os.path.abspath(os.path.join(base_dir, "..", "extract")))
 from extract_API import df_API_copy
 
-
 # Je crée ma fonction de la transformation pour df_API
-
-def EDA_data_API(df, df_name="df_API_copy"):
+def transform_data_API(df, df_name="df_API_copy"):
     df_copy = df.copy(deep=True)
     
     print("=" * 80)
-    print(f"EDA & PRÉPARATION : {df_name}")
+    print(f"Transformation et prération : {df_name}")
     print("=" * 80)
     
     # Exploration initiale
@@ -55,6 +51,7 @@ def EDA_data_API(df, df_name="df_API_copy"):
         plt.ylabel("Lignes")
         plt.tight_layout()
         plt.show()
+
         # Traitement des valeurs manquantes
         print("\nTraitement des valeurs manquantes :")
         for col in df_copy.columns:
@@ -127,12 +124,11 @@ def EDA_data_API(df, df_name="df_API_copy"):
     return df_copy
 
 
-# Exécution EDA et sauvegarde CSV
-
+# Exécution de la transformation et la sauvegarde en CSV
 if __name__ == "__main__":
-    print("\n Démarrage de l'EDA pour df_API\n")
+    print("\n Démarrage de la transformation pour df_API\n")
     
-    df_result_API = EDA_data_API(df_API_copy, df_name="df_API_copy")
+    df_result_API = transform_data_API(df_API_copy, df_name="df_API_copy")
     
     # Aperçu final
     print("\nPremières lignes :")

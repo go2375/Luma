@@ -6,42 +6,36 @@ import seaborn as sns
 import numpy as np
 import re
 
-
-# Chemins d'entrée et sortie CSV
-
+# Je définis le chemin du script courant qui est : Lumea/etl/transform
 base_dir = os.path.dirname(__file__)
 
-# Chemin du CSV d'entrée
+# Je définis le chemin pour récuperer mon CSV du dataframe API à la sortie de l'extraction 
 input_dir = os.path.join(base_dir, "..", "data")
 input_csv = os.path.join(input_dir, "df_BigData_extract_result.csv")
 
-# Chemin du CSV de sortie
+# Je définis le chemin pour créer le CSV à la fin de phase de transformation 
 output_dir = os.path.join(base_dir, "..", "data")
 os.makedirs(output_dir, exist_ok=True)
 output_csv = os.path.join(output_dir, "df_BigData_transform_result.csv")
 
-
-# Import du DataFrame depuis extract_BigData
-
+# J'importe le dataframe depuis extract_BigData
 sys.path.append(os.path.abspath(os.path.join(base_dir, "..", "extract")))
 from extract_BigData import df_BigData_copy
 
-
-# Fonction EDA pour df_BigData
-
-def EDA_data_BigData(df, df_name="df_BigData_copy"):
+# Je crée ma fonction de la transformation pour df_BigData
+def transform_data_BigData(df, df_name="df_BigData_copy"):
     df_copy = df.copy(deep=True)
 
-    # 1. Suppression de la colonne _id
+    # Suppression de la colonne _id
     if '_id' in df_copy.columns:
         df_copy = df_copy.drop(columns=['_id'])
 
-    # 2. Séparation code_postal_et_nom_commune
+    # Séparation de code_postal_et_nom_commune
     if 'code_postal_et_nom_commune' in df_copy.columns:
         df_copy[['code_insee', 'nom_commune']] = df_copy['code_postal_et_nom_commune'].str.split('#', expand=True)
         df_copy = df_copy.drop(columns=['code_postal_et_nom_commune'])
 
-    # 3. Extraction et normalisation de type_site
+    # Extraction et normalisation de type_site
     def extract_type_site(urls):
         if pd.isna(urls) or urls.strip() == '':
             return "Autre"
@@ -49,13 +43,13 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
         return "; ".join(categories)
     df_copy['type_site'] = df_copy['type_site'].apply(extract_type_site)
 
-    # 4. Gestion des dates
+    # Gestion des dates
     df_copy['updated_at'] = pd.to_datetime(df_copy['updated_at'], errors='coerce')
     today = pd.Timestamp.now().normalize()
     df_copy['created_at'] = df_copy['updated_at'].fillna(today)
     df_copy['updated_at'] = df_copy['updated_at'].fillna(today)
 
-    # 5. Heatmap valeurs manquantes : Pour notre ETL automatisé l’affichage en pause
+    # Heatmap pour les valeurs manquantes : Pour notre ETL automatisé l’affichage en pause
     # plt.figure(figsize=(10,4))
     # sns.heatmap(df_copy.isna(), cbar=False, cmap="viridis", yticklabels=False)
     # plt.title(f"Heatmap des valeurs manquantes ({df_name})")
@@ -64,7 +58,7 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     # plt.pause(0.1)
     # plt.close()
 
-    # 6. Remplissage valeurs manquantes
+    # Remplissage des valeurs manquantes
     df_copy['type_site'] = df_copy['type_site'].replace('', 'Autre').fillna('Autre')
     df_copy['description'] = df_copy['description'].fillna('Description non renseignée')
     df_copy['nom_site'] = df_copy['nom_site'].fillna('')
@@ -73,11 +67,11 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     df_copy['latitude'] = df_copy['latitude'].fillna(0.0)
     df_copy['longitude'] = df_copy['longitude'].fillna(0.0)
 
-    # 7. Suppression code_insee si toutes valeurs identiques
+    # Suppression du code_insee si toutes valeurs sont identiques
     if 'code_insee' in df_copy.columns and df_copy['code_insee'].nunique() == 1 and df_copy['code_insee'].iloc[0] in ['00000', 'nan']:
         df_copy = df_copy.drop(columns=['code_insee'])
 
-    # 8. Normalisation des types
+    # Normalisation des types
     df_copy['latitude'] = df_copy['latitude'].astype(float)
     df_copy['longitude'] = df_copy['longitude'].astype(float)
     df_copy['updated_at'] = pd.to_datetime(df_copy['updated_at'])
@@ -88,7 +82,7 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     for col in text_cols:
         df_copy[col] = df_copy[col].astype(str)
 
-    # 9. Remplissage latitude/longitude depuis point_geo
+    # Remplissage de latitude et longitude depuis point_geo
     def fill_lat_lon(row):
         if pd.isna(row['latitude']) or pd.isna(row['longitude']) or row['latitude']==0.0 or row['longitude']==0.0:
             point = row.get('point_geo', '')
@@ -103,14 +97,14 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     if 'point_geo' in df_copy.columns:
         df_copy = df_copy.apply(fill_lat_lon, axis=1)
 
-    # 10 & 11. Détection et suppression des doublons
+    # Détection et suppression des doublons
     cols_dup = ['nom_site', 'type_site', 'latitude', 'longitude']
     num_duplicates = df_copy.duplicated(subset=cols_dup).sum()
     print(f"Nombre de doublons détectés sur {cols_dup} : {num_duplicates}")
     df_copy = df_copy.drop_duplicates(subset=cols_dup, keep='first')
     print(f"Nombre de doublons restants après suppression : {df_copy.duplicated(subset=cols_dup).sum()}")
 
-    # 12. Remplissage nom_site manquants
+    # Remplissage nom_site manquants
     cols_dup_group = ['type_site', 'latitude', 'longitude']
     def fill_missing_nom_site(group):
         existing = group['nom_site'].replace('', np.nan).dropna()
@@ -119,24 +113,24 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
         return group
     df_copy = df_copy.groupby(cols_dup_group, group_keys=False).apply(fill_missing_nom_site)
 
-    # 13. Suppression lignes nom_site manquant
+    # Suppression lignes nom_site manquant
     before_drop = df_copy.shape[0]
     df_copy = df_copy[~df_copy['nom_site'].isna() & (df_copy['nom_site'] != '')]
     after_drop = df_copy.shape[0]
     print(f"Lignes supprimées car nom_site manquant après remplissage : {before_drop - after_drop}")
 
-    # 14. Anonymisation nom_site et description
-    # 1) Calculer les masques avant modification
+    # Anonymisation nom_site et description
+    # Calculation des masques avant modification
     orig_nom = df_copy['nom_site'].astype(str).fillna('')
     orig_desc = df_copy['description'].astype(str).fillna('')
 
     mask_nom = orig_nom.apply(lambda x: bool(re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", x)))
     mask_desc = orig_desc.apply(lambda x: bool(re.search(r"[A-ZÀ-Ÿ][a-zà-ÿ]+\s+[A-ZÀ-Ÿ][a-zà-ÿ]+", x)))
 
-    # 2) Créer la colonne anonymized à 0 par défaut
+    # Création de la colonne anonymized à 0 par défaut
     df_copy['anonymized'] = 0
 
-    # 3) Fonctions d'anonymisation
+    # Mes fonctions d'anonymisation
     def anonymize_nom_site_row(row):
         nom_site = row.get('nom_site', '')
         site_id = row.name
@@ -151,16 +145,16 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
             return "Description disponible sur demande"
         return text
 
-    # 4) Appliquer l'anonymisation
+    # Application de l'anonymisation
     df_copy['nom_site'] = df_copy.apply(anonymize_nom_site_row, axis=1)
     df_copy['description'] = df_copy['description'].apply(anonymize_description_text)
 
-    # 5) Marquer les lignes anonymisées
+    # Lignes anonymisées
     df_copy.loc[mask_nom | mask_desc, 'anonymized'] = 1
 
     print(f"[{df_name}] Anonymisation BigData effectuée sur {int(df_copy['anonymized'].sum())} lignes.")
 
-    # 15. Normalisation avancée type_site
+    # Normalisation avancée type_site
     def remove_internal_dup(type_str):
         if pd.isna(type_str):
             return type_str
@@ -169,7 +163,7 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
         return "; ".join(items)
     df_copy['type_site'] = df_copy['type_site'].apply(remove_internal_dup)
 
-    # 16. Création est_activite et est_lieu
+    # Création des colonnes : est_activite et est_lieu
     activity_keywords = ["visite", "surfing", "canoe", "canoë", "kayak", "balade", "voile", "tennis",
                          "piscine", "surf", "nautique", "nautic", "cyclotouriste", "cinéma", "cine",
                          "climb", "golf", "vélos", "velo", "gym", "pilates", "karting", "randos",
@@ -191,7 +185,7 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
     df_copy["est_lieu"] = df_copy["est_lieu"].astype(bool)
     df_copy.drop(columns=["nom_site_clean"], inplace=True)
 
-    # 17. Nettoyage final colonnes type_site
+    # Nettoyage final colonnes type_site
     if 'type_site' in df_copy.columns:
         df_copy = df_copy.drop(columns=['type_site'])
 
@@ -210,16 +204,15 @@ def EDA_data_BigData(df, df_name="df_BigData_copy"):
 
 
 # Exécution de la transformation et sauvegarde CSV
-
 if __name__ == "__main__":
-    print("\nDémarrage de la transformation pour df_BigData\n")
+    print("\n Démarrage de la transformation pour df_BigData \n")
 
-    df_result_BigData = EDA_data_BigData(df_BigData_copy, df_name="df_BigData_copy")
+    df_result_BigData = transform_data_BigData(df_BigData_copy, df_name="df_BigData_copy")
 
     # Aperçu final
     print(df_result_BigData.head())
     print(df_result_BigData.info())
 
-    # Sauvegarde CSV
+    # Sauvegarde en CSV
     df_result_BigData.to_csv(output_csv, index=False, encoding='utf-8-sig')
     print(f"\nDataFrame df_result_BigData sauvegardé en CSV : {output_csv}")

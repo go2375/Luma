@@ -2,9 +2,7 @@ import os
 import sqlite3
 import pandas as pd
 
-
 def load_to_sqlite(csv_path=None):
-    # FIX: Si csv_path est un DataFrame, le sauvegarder d'abord
     if isinstance(csv_path, pd.DataFrame):
         temp_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
         os.makedirs(temp_dir, exist_ok=True)
@@ -20,16 +18,16 @@ def load_to_sqlite(csv_path=None):
         raise FileNotFoundError(f" CSV introuvable : {csv_path}")
     print(f" CSV trouvé : {csv_path}")
 
-    # Assure que le dossier existe AVANT connexion SQLite
+    # Je m'assure que le dossier existe avant ma connexion à SQLite
     bdd_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "bdd"))
-    os.makedirs(bdd_dir, exist_ok=True)  # <-- création sûr du dossier
+    os.makedirs(bdd_dir, exist_ok=True)
     sqlite_path = os.path.join(bdd_dir, "bdd_connexion.sqlite")
 
-    # Lecture CSV
+    # Je lis le CSV
     df_final = pd.read_csv(csv_path, encoding="utf-8-sig")
     print(f" CSV chargé : {len(df_final)} lignes")
 
-    # Correction minimale des booléens
+    # J'effectue une correction minimale des booléens
     for col in ['est_activite', 'est_lieu']:
         if col not in df_final.columns:
             df_final[col] = False
@@ -41,28 +39,27 @@ def load_to_sqlite(csv_path=None):
                 }
             ).fillna(False).astype(bool)
 
-    # Assurer la présence et propreté des colonnes bretonnes
+    # Je m'assure de la présence et la propreté des colonnes bretonnes
     for col in ["nom_commune_breton", "nom_department_breton"]:
         if col not in df_final.columns:
             df_final[col] = ""
         else:
             df_final[col] = df_final[col].astype(str).str.strip()
 
-    # Connexion SQLite après création dossier
+    # Je gére ma connexion à SQLite
     conn = sqlite3.connect(sqlite_path)
     cur = conn.cursor()
     cur.execute("PRAGMA foreign_keys = ON;")
     print(f" Connexion SQLite : {sqlite_path}")
 
-    # Validation anonymized
+    # Je valide anonymized
     if 'anonymized' not in df_final.columns:
         df_final['anonymized'] = 0
     else:
         df_final['anonymized'] = df_final['anonymized'].astype(int)
 
-    # Création tables - inchangé
+    # Voici je crée mes tables
     cur.executescript("""
-    -- TABLES CREATION SCRIPT (idem à ton code initial)
     CREATE TABLE IF NOT EXISTS Role(
         role_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom_role TEXT UNIQUE NOT NULL
@@ -143,7 +140,7 @@ def load_to_sqlite(csv_path=None):
     );
     """)
     conn.commit()
-    print(" Tables créées ou vérifiées")
+    print(" Tables créées et vérifiées")
 
     # Insertion des rôles
     roles = [("admin",), ("visiteur",), ("prestataire",)]
@@ -151,7 +148,7 @@ def load_to_sqlite(csv_path=None):
     conn.commit()
     print("✓ Rôles insérés")
 
-    # Insertion des départements
+    # J'insère les départements
     df_final.loc[len(df_final)] = {
         "nom_department": "Côtes-d'Armor",
         "nom_department_breton": "Aodoù-an-Arvor"
@@ -172,7 +169,7 @@ def load_to_sqlite(csv_path=None):
     dept_map = {nom: did for did, nom in cur.fetchall()}
     print(f"✓ {len(df_dept)} départements insérés/mis à jour (Côtes-d'Armor inclus)")
 
-    # Insertion des communes
+    # J'insère les communes
     df_commune = df_final[["nom_commune", "nom_commune_breton", "code_insee", "label_cite_caractere", "nom_department"]].drop_duplicates()
     df_commune = df_commune[df_commune["nom_commune"].notna() & (df_commune["nom_commune"].str.strip() != "")]
     df_commune["department_id"] = df_commune["nom_department"].map(dept_map)
@@ -195,18 +192,18 @@ def load_to_sqlite(csv_path=None):
     commune_map = {nom: cid for cid, nom in cur.fetchall()}
     print(f"✓ {len(df_commune)} communes insérées")
 
-    # Nettoie les noms de communes avant mapping (pour éviter problèmes de correspondance)
+    # Je nettoie les noms de communes avant mapping (pour éviter problèmes de correspondance)
     df_sites = df_final[["nom_site", "est_activite", "est_lieu", "description", "latitude", "longitude", "nom_commune", "created_at", "updated_at", "anonymized"]].drop_duplicates()
     df_sites["nom_commune"] = df_sites["nom_commune"].astype(str).str.strip()
     df_final["nom_commune"] = df_final["nom_commune"].astype(str).str.strip()
 
-    # Pour debug : afficher communes sans commune_id
+    # J'affiche les communes sans commune_id
     df_sites["commune_id"] = df_sites["nom_commune"].map(commune_map)
     missing_communes = df_sites[df_sites["commune_id"].isna()]["nom_commune"].unique()
     if len(missing_communes) > 0:
         print("Communes sans id dans la base :", missing_communes)
 
-    # Insertion des sites touristiques
+    # J'insère les sites touristiques
     df_sites = df_sites[df_sites["nom_site"].notna() & (df_sites["nom_site"].str.strip() != "")]
     for _, row in df_sites.iterrows():
         if pd.notna(row["commune_id"]):
@@ -229,7 +226,7 @@ def load_to_sqlite(csv_path=None):
     conn.commit()
     print(f"✓ {len(df_sites)} sites touristiques insérés")
 
-    # Vérification finale
+    # J'effectue ma vérification finale
     print("\n Récapitulatif des lignes dans chaque table :")
     for table in ["Role", "Utilisateur", "Department", "Commune", "Site_Touristique", "Parcours", "Parcours_Site"]:
         cur.execute(f"SELECT COUNT(*) FROM {table};")
@@ -237,7 +234,6 @@ def load_to_sqlite(csv_path=None):
 
     conn.close()
     print(f"\n Base SQLite mise à jour : {sqlite_path}")
-
 
 if __name__ == "__main__":
     load_to_sqlite()

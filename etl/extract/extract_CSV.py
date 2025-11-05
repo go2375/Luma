@@ -11,7 +11,7 @@ project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
 # Je définis le chemin vers mon fichier CSV de source
 input_csv_path = os.path.join(project_root, "db_source", "CSV_source.csv")
 
-# Permet de lire le CSV et créer le dataframe
+# Je lis mon CSV et crée le dataframe
 df_CSV = pd.read_csv(
     input_csv_path,
     encoding='utf-8',
@@ -20,13 +20,13 @@ df_CSV = pd.read_csv(
     on_bad_lines='warn'
 )
 
-# Permet une affichage rapide pour la vérification
+# J'affiche les 5 premières lignes de mon df_CSV
 print("Aperçu des 5 premières lignes :")
 print(df_CSV.head())
 print("\nColonnes et types :")
 print(df_CSV.info())
 
-# Permet de sélectionner et renommer les colonnes pour l'extraction
+# Je sélectionne et renomme les colonnes pour l'extraction
 df_CSV_copy = df_CSV[[
     'Updated', 
     'SyndicObjectName', 
@@ -50,11 +50,11 @@ df_CSV_copy = df_CSV[[
     'DetailIDENTDESCRIPTIONCOMMERCIALE': 'description'
 })
 
-# Permet une affichage rapide du dataframe
+# J'affiche les 5 premières lignes de mon df_CSV
 print("Aperçu après sélection et renommage :")
 print(df_CSV_copy.head())
 
-# On sauvegarde le dataframe final en CSV
+# Je sauvegarde le dataframe final en CSV
 output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 os.makedirs(output_dir, exist_ok=True)
 csv_path = os.path.join(output_dir, "df_CSV_extract_result.csv")
@@ -62,6 +62,6 @@ csv_path = os.path.join(output_dir, "df_CSV_extract_result.csv")
 df_CSV_copy.to_csv(csv_path, index=False, encoding='utf-8-sig')
 print(f"\nDataFrame df_CSV_copy sauvegardé en CSV : {csv_path}")
 
-# On affiche le nombre de lignes et de colonnes
+# J'affiche le nombre de lignes et de colonnes
 print(f"Nombre de lignes : {df_CSV_copy.shape[0]}")
 print(f"Nombre de colonnes : {df_CSV_copy.shape[1]}")

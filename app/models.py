@@ -306,7 +306,8 @@ class ParcoursModel:
             # Récupération des sites liés
             cur.execute("""
                 SELECT ps.ordre_visite, s.site_id, s.nom_site, s.est_activite, s.est_lieu, s.description,
-                       s.latitude, s.longitude, c.nom_commune, d.nom_department
+                       s.latitude, s.longitude, c.nom_commune, c.nom_commune_breton, 
+                       d.nom_department, d.nom_department_breton
                 FROM Parcours_Site ps
                 JOIN Site_Touristique s ON ps.site_id = s.site_id
                 JOIN Commune c ON s.commune_id = c.commune_id

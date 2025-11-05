@@ -4,13 +4,13 @@ os.makedirs("./bdd", exist_ok=True)
 
 sqlite_path = "./bdd/bdd_connexion.sqlite"
 conn = sqlite3.connect(sqlite_path)
-# On crée un curseur sur la connexion qui sert à exécuter des requêtes SQL et à récupérer leurs résultat
+# Je crée un curseur de ma connexion à SQLite qui sert à exécuter mes requêtes SQL et à récupérer leurs résultat
 cur = conn.cursor()
 
-# Permet d'activer les contraintes de clés étrangères
+# J'active les contraintes de clés étrangères
 cur.execute("PRAGMA foreign_keys = ON;")
 
-# Choix pour les tables :
+# Voici mes choix pour mes tables :
 # Table Role : chaque role_id a un nom unique.
 
 # Table Utilisateur : chaque utilisateur peut avoir un seul rôle (cela peut évoluer facilement et être
@@ -42,7 +42,7 @@ cur.execute("PRAGMA foreign_keys = ON;")
 # continue d’exister indépendamment de l’existence du compte de son prestataire (ON DELETE SET NULL). En revanche,
 # si l’id du prestataire change, le prestataire_id associé au site correspondant est mis à jour
 # (ON UPDATE CASCADE).
-# RGPD côté prestataires : Les parcours et sites restent accessibles, mais sans révéler l’identité du prestataire, car le prestataire ne révèle pas l’identité réelle de la personne 
+# RGPD côté prestataires : Les parcours et sites restent accessibles, mais sans révéler l’identité du prestataire, car les sites ne révèlent pas l’identité réelle de la personne.
 # RGPD : De plus, si un prestataire supprime son compte, le site reste dans la BDD mais n’expose pas le prestataire (ON DELETE SET NULL) 
 # RGPD : (Si c’est le cas, son username ainsi que le nom_site de son site touristique sont correctement anonymisés).
 # RGPD : Les variables deleted_at DATETIME NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, anonymized BOOLEAN DEFAULT 0 ont été ajoutées pour assurer le respect du RGPD concernant les données des prestataires.

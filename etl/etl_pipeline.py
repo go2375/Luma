@@ -1,19 +1,9 @@
-"""
-etl_pipeline.py
-Orchestre l'ensemble du processus ETL :
-1. Extract
-2. Transform
-3. Merge
-4. Load
-"""
-
 import os
 import sys
 import pandas as pd
 
-# -----------------------
-# Configuration des chemins
-# -----------------------
+# Je configure mes chemins
+
 base_dir = os.path.dirname(__file__)
 sys.path.extend([
     os.path.join(base_dir, "extract"),
@@ -23,9 +13,10 @@ sys.path.extend([
 data_dir = os.path.join(base_dir, "data")
 os.makedirs(data_dir, exist_ok=True)
 
-print("\n--- ETAPE 1 : EXTRACTION ---\n")
+# Etape 1 : Extraction
+print("\n Etape 1 : Extraction \n")
 
-# ======== Extract API ========
+# Extraction : données d'API
 try:
     from extract_API import df_API_copy
 except Exception as e:
@@ -38,7 +29,7 @@ except Exception as e:
         df_API_copy = pd.DataFrame()
         print("Aucun CSV API disponible, création d'un DataFrame vide")
 
-# ======== Extract BigData ========
+# Extraction : BigData
 try:
     from extract_BigData import df_BigData_copy
 except Exception as e:
@@ -51,7 +42,7 @@ except Exception as e:
         df_BigData_copy = pd.DataFrame()
         print("Aucun CSV BigData disponible, création d'un DataFrame vide")
 
-# ======== Extract SQLite ========
+# Extraction : données en SQLite
 try:
     from extract_SQLite import df_SQLite_copy
 except Exception as e:
@@ -64,7 +55,7 @@ except Exception as e:
         df_SQLite_copy = pd.DataFrame()
         print("Aucun CSV SQLite disponible, création d'un DataFrame vide")
 
-# ======== Extract CSV ========
+# Extraction : données du fichier CSV
 try:
     from extract_CSV import df_CSV_copy
 except Exception as e:
@@ -77,7 +68,7 @@ except Exception as e:
         df_CSV_copy = pd.DataFrame()
         print("Aucun CSV CSV disponible, création d'un DataFrame vide")
 
-# ======== Extract WebScrap ========
+# Extraction : WebScraping
 try:
     from extract_WebScrap import df_WebScrap_copy
 except Exception as e:
@@ -90,38 +81,36 @@ except Exception as e:
         df_WebScrap_copy = pd.DataFrame()
         print("Aucun CSV WebScrap disponible, création d'un DataFrame vide")
 
-# Sauvegardes d’extraction
+# Je sauvegardes mes extractions
 df_SQLite_copy.to_csv(os.path.join(data_dir, "df_SQLite_extract_result.csv"), index=False, encoding='utf-8-sig')
 df_CSV_copy.to_csv(os.path.join(data_dir, "df_CSV_extract_result.csv"), index=False, encoding='utf-8-sig')
 df_WebScrap_copy.to_csv(os.path.join(data_dir, "df_WebScrap_extract_result.csv"), index=False, encoding='utf-8-sig')
-print("Extraction terminée ")
+df_API_copy.to_csv(os.path.join(data_dir, "df_API_extract_result.csv"), index=False, encoding='utf-8-sig')
+df_SQLite_copy.to_csv(os.path.join(data_dir, "df_SQLite_extract_result.csv"), index=False, encoding='utf-8-sig')
+print("Extractions terminées ")
 
-# -----------------------
-# 2. TRANSFORMATION
-# -----------------------
-print("\n--- ETAPE 2 : TRANSFORMATION ---\n")
+# Etape 2 : Transformation
+print("\n Etape 2 : Transformation \n")
 
-from transform_API import EDA_data_API
-from transform_BigData import EDA_data_BigData
-from transform_SQLite import EDA_data_SQLite
-from transform_CSV import EDA_data_CSV
-from transform_WebScraping import EDA_data_WebScrap
+from transform_API import transform_data_API
+from transform_BigData import transform_data_BigData
+from transform_SQLite import transform_data_SQLite
+from transform_CSV import transform_data_CSV
+from transform_WebScraping import transform_data_WebScrap
 
 try:
-    df_API_transformed = EDA_data_API(df_API_copy)
-    df_BigData_transformed = EDA_data_BigData(df_BigData_copy)
-    df_SQLite_transformed = EDA_data_SQLite(df_SQLite_copy)
-    df_CSV_transformed = EDA_data_CSV(df_CSV_copy)
-    df_WebScrap_transformed = EDA_data_WebScrap(df_WebScrap_copy)
+    df_API_transformed = transform_data_API(df_API_copy)
+    df_BigData_transformed = transform_data_BigData(df_BigData_copy)
+    df_SQLite_transformed = transform_data_SQLite(df_SQLite_copy)
+    df_CSV_transformed = transform_data_CSV(df_CSV_copy)
+    df_WebScrap_transformed = transform_data_WebScrap(df_WebScrap_copy)
     print("Transformation terminée ")
 except Exception as e:
     print("Erreur pendant la transformation :", e)
     df_API_transformed = df_BigData_transformed = df_SQLite_transformed = df_CSV_transformed = df_WebScrap_transformed = pd.DataFrame()
 
-# -----------------------
-# 3. MERGE
-# -----------------------
-print("\n--- ETAPE 3 : MERGE ---\n")
+# Etape 3 : Merge
+print("\n Etape 2 : Merge \n")
 
 from merge import merge_dataframes
 try:
@@ -137,10 +126,8 @@ except Exception as e:
     print("Erreur pendant le merge :", e)
     df_merged = pd.DataFrame()
 
-# -----------------------
-# 4. LOAD
-# -----------------------
-print("\n--- ETAPE 4 : LOAD ---\n")
+# Etape 4 : Load
+print("\n Etape 4 : Load \n")
 
 from bdd_create_and_load_to_SQLite import load_to_sqlite
 
@@ -150,4 +137,4 @@ try:
 except Exception as e:
     print("Erreur pendant le chargement :", e)
 
-print("\n--- PIPELINE COMPLET --- ")
+print("\n Pipeline complet.")

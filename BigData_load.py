@@ -3,21 +3,25 @@ import csv
 import json
 from datetime import datetime, timezone
 from pymongo import MongoClient
+from dotenv import load_dotenv
 
-# Permet de configurer MongoDB
-MONGO_URI = "mongodb://isen:isen@localhost:27017/POI?authSource=admin"
+# Je cherche un fichier .env à la racine du projet
+load_dotenv()
+
+# Je récupère le MONGO_URI depuis l'environnement
+MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = "POI"
 COLLECTION_NAME = "Points"
 
 # Je définis mon chemin pour récuperer mes données Big Data
 input_csv_path = os.path.join(os.path.dirname(__file__), "./db_source/BigData_source.csv")
 
-# Permet de gérer ma connexion à MongoDB
+# Je gére ma connexion à MongoDB
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 
-# Permet de lire mon CSV source et d'insérer les données dans ma base de données MongoDB
+# Je lis mon CSV source et j'insére les données dans ma base de données MongoDB
 count = 0
 with open(input_csv_path, newline='', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)

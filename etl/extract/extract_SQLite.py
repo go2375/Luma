@@ -12,10 +12,10 @@ project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))  # /projet
 # Je définis le chemin vers ma base SQLite de data brut
 sqlite_path = os.path.join(project_root, "db", "SQLite_data_brut.sqlite")
 
-# Permet de gérer la connexion à SQLite
+# Je gère ma connexion à SQLite
 conn = sqlite3.connect(sqlite_path)
 
-# Permet de lire la table Commune et la table Département
+# Je lis ma table Commune et ma table Département
 query = """
 SELECT c.code_insee, c.nom_commune, d.code_department, d.nom_department
 FROM Commune c
@@ -25,17 +25,17 @@ ORDER BY d.department_id, c.nom_commune
 
 df_SQLite = pd.read_sql_query(query, conn)
 
-# Permet de fermer la connexion
+# Je ferme ma connexion
 conn.close()
 
-# Permet une affichage rapide
+# J'affiche les 5 premières lignes de mon df_SQLite
 print(df_SQLite.head())
 print(df_SQLite.info())
 
-# On créer un df_SQLite_copy pour éviter les modifications du df original pour transform
+# Je crée un df_SQLite_copy pour éviter les modifications du df original pour l'étape de la transformation
 df_SQLite_copy = df_SQLite.copy(deep=True)
 
-# On sauvegarde le résultat en CSV
+# Je sauvegarde le résultat en CSV
 output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 os.makedirs(output_dir, exist_ok=True)
 csv_path = os.path.join(output_dir, "df_SQLite_extract_result.csv")

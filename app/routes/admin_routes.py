@@ -77,6 +77,8 @@ async def create_user(
     role = next((r for r in roles if r["role_id"] == role_id), None)
     if not role:
         raise HTTPException(status_code=400, detail="Rôle introuvable")
+    
+    role_id = role
 
     # Créer l'utilisateur
     result = UserService.create_user(username=username, password=password, role_id=role_id)
