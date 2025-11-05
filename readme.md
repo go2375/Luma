@@ -91,20 +91,21 @@ git clone https://github.com/go2375/Lumea.git
 
 cd Lumea
 
-3. Créer et activer l’environnement virtuel
+2. Créer et activer l’environnement virtuel
    ---
 python -m venv venv
 
 source venv/bin/activate  # Linux/macOS
 
-5. Installer les dépendances
+3. Installer les dépendances
    ---
 pip install --upgrade pip
 
 pip install -r requirements.txt
 
 
-Vérifier aussi l'installation des dépendances pour Web Scraping :
+4. Vérifier l'installation des dépendances pour Web Scraping
+   ---
 - Vérifiez la version de Chrome :
 
 google-chrome --version    # Linux/macOS
@@ -143,7 +144,7 @@ sudo docker-compose up -d
 
 Créez ensuite la base POI et la collection Points dans MongoDB.
 
-8. Exécuter le pipeline ETL complet
+7. Exécuter le pipeline ETL complet
     ---
 cd Lumea/etl
 
