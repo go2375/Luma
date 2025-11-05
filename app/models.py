@@ -272,6 +272,13 @@ class SiteModel:
 # ===== ParcoursModel (RGPD compatible) =====
 class ParcoursModel:
     @staticmethod
+    def get_all() -> List[Dict]:
+        with Database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM Parcours")
+            return [Database.dict_from_row(row) for row in cur.fetchall()]
+
+    @staticmethod
     def get_by_user(user_id: int) -> List[Dict]:
         with Database.get_connection() as conn:
             cur = conn.cursor()
@@ -374,7 +381,7 @@ class ParcoursModel:
 # ===== CommuneModel =====
 class CommuneModel:
     @staticmethod
-    def get_all() -> List[Dict]:
+    def get_all_communes() -> List[Dict]:
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -387,7 +394,7 @@ class CommuneModel:
 # ===== DepartmentModel =====
 class DepartmentModel:
     @staticmethod
-    def get_all() -> List[Dict]:
+    def get_all_departments() -> List[Dict]:
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("SELECT * FROM Department")

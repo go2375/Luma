@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, status
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.config import Config
@@ -6,7 +6,7 @@ from app.routes.auth_routes import router as auth_router
 from app.routes.admin_routes import router as admin_router
 from app.routes.prestataire_routes import router as prestataire_router
 from app.routes.public_routes import router as public_router
-from app.auth import AuthService  # service de token et login
+from app.auth import AuthService  # service JWT
 
 def create_app() -> FastAPI:
     app = FastAPI(title="API Luméa", version="1.0.0")
@@ -16,17 +16,29 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=Config.CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
-    # ===== Middleware Auth / Vérification JWT =====
+    # ===== Middleware JWT =====
     @app.middleware("http")
-    async def check_jwt_middleware(request: Request, call_next):
-        """Vérifie si les routes nécessitent un token valide.
-        On ignore les routes publiques et login/signup.
+    async def decode_jwt_middleware(request: Request, call_next):
         """
-        public_paths = ["/api/health", "/api/login", "/api/register"]
+        Middleware pour décoder le JWT et stocker l'utilisateur dans request.state.user.
+        Les routes publiques et Swagger sont ignorées ici.
+        """
+        public_paths = [
+            "/api/health",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/sites",
+            "/api/communes",
+            "/api/departments",
+            "/docs",
+            "/openapi.json",
+            "/redoc",
+            "/swagger-ui"
+        ]
         if any(request.url.path.startswith(p) for p in public_paths):
             return await call_next(request)
 
@@ -45,8 +57,9 @@ def create_app() -> FastAPI:
                 content={"detail": decoded.get("error", "Token invalide")}
             )
 
-        # On peut stocker le payload pour accès dans les endpoints via request.state.user
+        # Stockage du payload pour accès dans les endpoints
         request.state.user = decoded["data"]
+
         return await call_next(request)
 
     # ===== Inclusion des routers =====
@@ -56,23 +69,15 @@ def create_app() -> FastAPI:
     app.include_router(public_router)
 
     # ===== Health Check =====
-    @app.get("/api/health")
+    @app.get("/api/health", tags=["Health"])
     async def health_check():
         return {"status": "ok", "message": "API Luméa fonctionne correctement"}
 
     # ===== Gestion globale des erreurs =====
-    @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException):
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": exc.detail},
-        )
-
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": str(exc)},
-        )
+        status_code = getattr(exc, "status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        detail = getattr(exc, "detail", str(exc))
+        return JSONResponse(status_code=status_code, content={"detail": detail})
 
     return app

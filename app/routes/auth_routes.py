@@ -1,102 +1,51 @@
-from fastapi import APIRouter, HTTPException, Body
-from app.models import RoleModel
+from fastapi import APIRouter, HTTPException, status, Depends
+from pydantic import BaseModel
 from app.services.user_service import UserService
-from app.decorators import token_required
+from app.auth import AuthService
 
-router = APIRouter(
-    prefix="/api/auth",
-    tags=["Authentification"]
-)
+router = APIRouter(prefix="/api/auth", tags=["Authentification"])
 
-# ---------------- LOGIN ----------------
-@router.post("/login", tags=["Authentification"])
-async def login(
-    username: str = Body(..., description="Nom d'utilisateur", example="jean123"),
-    password: str = Body(..., description="Mot de passe", example="Password123!")
-):
-    """
-    Authentifie un utilisateur et retourne un token JWT.
-    """
-    auth_result = UserService.authenticate(username, password)
+# ===== Schemas =====
+class RegisterSchema(BaseModel):
+    username: str
+    password: str
+    role_id: int  # rôle par défaut pour un utilisateur
 
-    if not auth_result["success"]:
-        raise HTTPException(status_code=401, detail=auth_result["error"])
+class LoginSchema(BaseModel):
+    username: str
+    password: str
 
-    return {
-        "success": True,
-        "message": "Connexion réussie",
-        "token": auth_result["token"],
-        "user": auth_result["user"]
-    }
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
-# ---------------- REGISTER ----------------
-@router.post("/register", tags=["Authentification"])
-async def register(
-    username: str = Body(..., description="Nom d'utilisateur", example="newuser"),
-    password: str = Body(..., description="Mot de passe", example="Pass123!")
-):
-    """
-    Crée un nouvel utilisateur avec le rôle par défaut `visiteur`.  
-    Retourne un token JWT directement après inscription.
-    """
-    roles = RoleModel.get_all()
-    visiteur_role = next((r for r in roles if r["nom_role"] == "visiteur"), None)
-    if not visiteur_role:
-        raise HTTPException(status_code=500, detail="Rôle visiteur introuvable")
+# ===== Register =====
+@router.post("/register", response_model=dict)
+def register(data: RegisterSchema):
+    # Vérifie si l'utilisateur existe déjà
+    existing_users = UserService.get_all()
+    if any(u["username"] == data.username for u in existing_users):
+        raise HTTPException(status_code=400, detail="Nom d'utilisateur déjà utilisé")
 
-    user_result = UserService.create_user(username, password, visiteur_role["role_id"])
-    if not user_result["success"]:
-        raise HTTPException(status_code=409, detail=user_result["error"])
+    user = UserService.create(data.username, data.password, data.role_id)
+    return {"message": f"Utilisateur {user['username']} créé avec succès", "user_id": user["user_id"]}
 
-    auth_result = UserService.authenticate(username, password)
-    if not auth_result["success"]:
-        raise HTTPException(status_code=500, detail="Échec de l'authentification après inscription")
+# ===== Login =====
+@router.post("/login", response_model=TokenResponse)
+def login(data: LoginSchema):
+    users = UserService.get_all()
+    user = next((u for u in users if u["username"] == data.username), None)
 
-    return {
-        "success": True,
-        "message": "Inscription réussie",
-        "token": auth_result["token"],
-        "user": auth_result["user"]
-    }
+    if not user or not AuthService.verify_password(data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Nom d'utilisateur ou mot de passe incorrect")
 
-# ---------------- VERIFY TOKEN ----------------
-@router.get("/verify", tags=["Authentification"])
+    token = AuthService.generate_token(user["user_id"], user["username"], user["role"])
+    return {"access_token": token}
+
+# ===== Exemple endpoint sécurisé =====
+from app.decorators import token_required, role_required
+
+@router.get("/me", response_model=dict)
 @token_required
-async def verify_token(current_user: dict):
-    """
-    Vérifie la validité d’un token JWT et retourne les informations de l’utilisateur.
-    """
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Token invalide ou expiré")
-
-    return {
-        "success": True,
-        "message": "Token valide",
-        "user": {
-            "user_id": current_user["user_id"],
-            "username": current_user["username"],
-            "role": current_user["role"]
-        }
-    }
-
-# ---------------- CHANGE PASSWORD ----------------
-@router.put("/change-password", tags=["Authentification"])
-@token_required
-async def change_password(
-    current_user: dict,
-    old_password: str = Body(..., description="Ancien mot de passe", example="OldPass123!"),
-    new_password: str = Body(..., description="Nouveau mot de passe", example="NewPass456!")
-):
-    """
-    Permet à un utilisateur connecté de changer son mot de passe.
-    Vérifie l’ancien mot de passe avant de l’appliquer.
-    """
-    auth_check = UserService.authenticate(current_user["username"], old_password)
-    if not auth_check["success"]:
-        raise HTTPException(status_code=401, detail="Ancien mot de passe incorrect")
-
-    update_result = UserService.update_password(current_user["user_id"], new_password)
-    if not update_result["success"]:
-        raise HTTPException(status_code=500, detail=update_result.get("error", "Erreur lors de la mise à jour"))
-
-    return {"success": True, "message": "Mot de passe mis à jour avec succès."}
+def get_me(current_user: dict = None):
+    return {"user_id": current_user["user_id"], "username": current_user["username"], "role": current_user["role"]}
