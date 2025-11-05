@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.services.user_service import UserService
 from app.auth import AuthService
+from app.decorators import token_required, role_required
 
 router = APIRouter(prefix="/api/auth", tags=["Authentification"])
 
@@ -22,9 +23,8 @@ class TokenResponse(BaseModel):
 # ===== Register =====
 @router.post("/register", response_model=dict)
 def register(data: RegisterSchema):
-    # Vérifie si l'utilisateur existe déjà
-    existing_users = UserService.get_all()
-    if any(u["username"] == data.username for u in existing_users):
+    existing_user = UserService.get_by_username(data.username)
+    if existing_user:
         raise HTTPException(status_code=400, detail="Nom d'utilisateur déjà utilisé")
 
     user = UserService.create(data.username, data.password, data.role_id)
@@ -33,19 +33,9 @@ def register(data: RegisterSchema):
 # ===== Login =====
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginSchema):
-    users = UserService.get_all()
-    user = next((u for u in users if u["username"] == data.username), None)
-
-    if not user or not AuthService.verify_password(data.password, user["password"]):
+    user = UserService.get_by_username(data.username)
+    if not user or not AuthService.verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Nom d'utilisateur ou mot de passe incorrect")
 
-    token = AuthService.generate_token(user["user_id"], user["username"], user["role"])
+    token = AuthService.generate_token(user["user_id"], user["username"], user["nom_role"])
     return {"access_token": token}
-
-# ===== Exemple endpoint sécurisé =====
-from app.decorators import token_required, role_required
-
-@router.get("/me", response_model=dict)
-@token_required
-def get_me(current_user: dict = None):
-    return {"user_id": current_user["user_id"], "username": current_user["username"], "role": current_user["role"]}

@@ -20,19 +20,3 @@ def get_site(site_id: int, current_user: dict = None):
     if not site:
         raise HTTPException(status_code=404, detail="Site non trouvé")
     return site
-
-# ===== Parcours pour prestataires =====
-@router.get("/parcours")
-@token_required
-@role_required("prestataire")
-def get_all_parcours(current_user: dict = None):
-    return ParcoursService.get_all(include_prestataire=True)
-
-@router.get("/parcours/{parcours_id}")
-@token_required
-@role_required("prestataire")
-def get_parcours(parcours_id: int, current_user: dict = None):
-    parcours = ParcoursService.get_by_id(parcours_id, include_prestataire=True)
-    if not parcours:
-        raise HTTPException(status_code=404, detail="Parcours non trouvé")
-    return parcours
