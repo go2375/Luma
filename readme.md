@@ -94,16 +94,35 @@ python -m venv venv
 source venv/bin/activate  # Linux/macOS
 
 3. Installer les dépendances
+pip install --upgrade pip
 pip install -r requirements.txt
 
-4. Configurer les variables d'environnement
-.env
-Modifier SECRET_KEY, JWT_EXPIRE_HOURS, DATABASE_URL
+Vérifier aussi l'installation des dépendances pour WebScraping : 
 
-5. Lancer docker my_mongo
+5. Configurer les variables d'environnement
+- Créez un fichier .env à la racine du projet.
+- Ajoutez et modifiez les variables suivantes :
+
+SECRET_KEY=<votre_clef_secrète>
+JWT_EXPIRE_HOURS=24
+DATABASE_URL=<votre_url_sqlite_ou_postgresql>
+MONGO_URI=<votre_uri_mongodb>
+
+6. Lancer MongoDB via Docker
 sudo docker-compose up -d
+Créez ensuite la base POI et la collection Points dans MongoDB.
 
-6. Lancer l’API
+7. Exécuter le pipeline ETL complet
+cd Lumea/etl
+python3 etl_pipeline.py
+
+Ce script :
+- Extrait les données depuis CSV, API, BigData, WebScrap et SQLite.
+- Transforme les données (nettoyage, conversion des booléens, gestion des timestamps…).
+- Agrège les données dans un DataFrame final (df_final).
+- Crée la base SQLite et y charge les données.
+  
+8. Lancer l’API Luméa
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8081
 
 L’API est accessible : http://127.0.0.1:8000/docs
