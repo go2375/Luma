@@ -34,8 +34,8 @@ Les données sont accessibles via une **API REST sécurisée** (FastAPI), avec u
 ## 🧩 Structure du projet
 Lumea/
 ├── app/
-│ ├── routes/ # Routes REST (users, sites, parcours, etc.)
-│ ├── services/ # Services
+│ ├── routes/ # Routes REST (admin, auth, public)
+│ ├── services/ # Services (parcours, role, user, site)
 │ ├── main.py # Point d'entrée FastAPI
 │ ├── models.py
 │ ├── auth.py
@@ -180,7 +180,7 @@ Basé sur Merise (MCD/MLD) avec intégrité référentielle.
 - Extraction multi-sources : API, CSV, MongoDB, Web Scraping, SQLite  
 - Nettoyage, normalisation et agrégation des données avec Pandas, Seaborn et Matplotlib  
 - Création automatique de la base SQLite  
-- API REST complète (CRUD) : `/users`, `/roles`, `/sites`, `/parcours`, `/communes`, `/departements`
+- API REST complète (CRUD) : `/users`, `/roles`, `/sites`, `/parcours`
 - Sécurisation JWT & gestion des rôles  
 - Documentation interactive (Swagger UI / OpenAPI)  
 - Suivi temporel : `created_at`, `updated_at`, `deleted_at`  
