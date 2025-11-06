@@ -5,7 +5,7 @@
 
 # router = APIRouter(prefix="/api/prestataire", tags=["Prestataire"])
 
-# # ===== Sites =====
+# # Sites
 # @router.get("/sites")
 # @token_required
 # @role_required("prestataire")
@@ -21,7 +21,7 @@
 #         raise HTTPException(status_code=404, detail="Site non trouvé")
 #     return site
 
-# # ===== Parcours =====
+# # Parcours
 # @router.get("/parcours")
 # @token_required
 # @role_required("prestataire")

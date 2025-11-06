@@ -5,27 +5,40 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 from app.config import Config
 
-# =================== DB CONNECTION ===================
+# Connexion à la base SQLite
 def get_db_connection() -> sqlite3.Connection:
+    """
+    Je crée une connexion à la base SQLite.
+    Je configure row_factory pour récupérer des dictionnaires et j'active les clés étrangères.
+    """
     conn = sqlite3.connect(Config.DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-# =================== USER ANONYMIZATION ===================
+# Anonymisation des utilisateurs
 def is_identifiable(username: str) -> bool:
-    """Vérifie si un username contient des éléments identifiables"""
+    """
+    Je vérifie si le username contient des informations personnelles identifiables.
+    Par exemple : email, espace ou caractères spéciaux.
+    """
     if any(char in username for char in ["@", ".", " "]):
         return True
-    # doit correspondre à a-z, 0-9, underscore, 4-20 caractères
+    # Vérifie le pattern : a-z, 0-9, underscore, 4-20 caractères
     return not re.fullmatch(r"[a-z0-9_]{4,20}", username)
 
 def generate_pseudonymous_username(user_id: int, prefix: str = "user") -> str:
-    """Génère un pseudonyme basé sur l'ID utilisateur"""
+    """
+    Je génère un pseudonyme pour un utilisateur basé sur son ID.
+    Exemple : user_12
+    """
     return f"{prefix}_{user_id}"
 
 def anonymize_username(user_id: int, prefix: str = "user") -> Dict[str, str]:
-    """Anonymise un username dans la base"""
+    """
+    Je modifie le username d'un utilisateur pour le rendre anonyme dans la base.
+    Je marque également le champ `anonymized` pour savoir qu'il est RGPD compliant.
+    """
     new_username = generate_pseudonymous_username(user_id, prefix)
     with get_db_connection() as conn:
         cur = conn.cursor()
@@ -38,7 +51,10 @@ def anonymize_username(user_id: int, prefix: str = "user") -> Dict[str, str]:
     return {"user_id": user_id, "new_username": new_username}
 
 def check_and_fix_all_usernames() -> None:
-    """Parcourt tous les utilisateurs et anonymise ceux identifiables"""
+    """
+    Je parcours tous les utilisateurs et j'anonymise ceux qui contiennent des données identifiables.
+    Je fais un print pour indiquer combien de usernames ont été modifiés.
+    """
     with get_db_connection() as conn:
         cur = conn.cursor()
         cur.execute("SELECT user_id, username, anonymized FROM Utilisateur WHERE deleted_at IS NULL")
@@ -56,20 +72,26 @@ def check_and_fix_all_usernames() -> None:
     print(f"{anonymized_count} username(s) anonymisé(s)" if anonymized_count else "Tous les usernames sont RGPD conformes")
 
 def validate_and_fix_username(username: str, user_id: int = None) -> str:
-    """Valide et corrige un username lors de l'inscription"""
+    """
+    Je valide un username lors de l'inscription.
+    Si le username est identifiable, je le remplace par un pseudonyme.
+    """
     if is_identifiable(username):
         if user_id is not None:
             return generate_pseudonymous_username(user_id)
         return f"user_{random.randint(10000, 99999)}"
     return username
 
-# =================== SITE ANONYMIZATION ===================
+# Anonymisation des sites
 def anonymize_nom_site(site_row: Dict[str, Any]) -> str:
-    """Anonymise le nom d'un site si nécessaire"""
+    """
+    Je modifie le nom d'un site si c'est un nom de personne pour la RGPD.
+    Je différencie les lieux, activités et fallback avec un ID unique.
+    """
     nom_site = site_row.get("nom_site", "")
     site_id = site_row.get("site_id", 0)
 
-    # Détecte nom de personne par pattern "Prénom Nom"
+    # Détecte un nom de personne : "Prénom Nom"
     if re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", nom_site):
         if site_row.get("est_lieu"):
             return f"Lieu #{site_id}"
@@ -79,7 +101,10 @@ def anonymize_nom_site(site_row: Dict[str, Any]) -> str:
     return nom_site
 
 def site_to_public_dict(site_row: Dict[str, Any]) -> Dict[str, Any]:
-    """Convertit un site pour affichage public avec anonymisation"""
+    """
+    Je prépare un dictionnaire pour affichage public.
+    Je masque les coordonnées GPS pour les lieux résidentiels.
+    """
     public_data = {
         "site_id": site_row.get("site_id"),
         "nom_site": anonymize_nom_site(site_row),
@@ -93,7 +118,7 @@ def site_to_public_dict(site_row: Dict[str, Any]) -> Dict[str, Any]:
         "created_at": site_row.get("created_at")
     }
 
-    # Masque GPS pour lieux résidentiels
+    # Je masque latitude/longitude pour les lieux
     if site_row.get("est_lieu"):
         public_data["localisation_approximative"] = site_row.get("nom_commune")
     else:
@@ -103,7 +128,10 @@ def site_to_public_dict(site_row: Dict[str, Any]) -> Dict[str, Any]:
     return public_data
 
 def site_to_prestataire_dict(site_row: Dict[str, Any]) -> Dict[str, Any]:
-    """Convertit un site pour affichage prestataire (toutes données visibles)"""
+    """
+    Je prépare un dictionnaire complet pour les prestataires.
+    Toutes les données sont visibles.
+    """
     return {
         "site_id": site_row.get("site_id"),
         "nom_site": site_row.get("nom_site"),
@@ -121,9 +149,12 @@ def site_to_prestataire_dict(site_row: Dict[str, Any]) -> Dict[str, Any]:
         "updated_at": site_row.get("updated_at")
     }
 
-# =================== CLEANUP ===================
+# Nettoyage des enregistrements
 def cleanup_old_deleted_records(days: int = 30) -> None:
-    """Supprime définitivement les enregistrements supprimés depuis X jours"""
+    """
+    Je supprime définitivement les enregistrements marqués supprimés depuis 30 jours.
+    Je nettoie les utilisateurs, sites et parcours.
+    """
     cutoff_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
     with get_db_connection() as conn:
         cur = conn.cursor()

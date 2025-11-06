@@ -2,10 +2,14 @@ import sqlite3
 from typing import Optional, List, Dict, Any
 from app.config import Config
 
-# =================== DB CONNECTION ===================
+# Connexion à la base SQLite
 class Database:
+    """
+    Je centralise la connexion à la base SQLite et la conversion Row -> dict
+    """
     @staticmethod
     def get_connection():
+        # Je crée une connexion et j'active les clés étrangères
         conn = sqlite3.connect(Config.DATABASE_PATH)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
@@ -13,10 +17,12 @@ class Database:
 
     @staticmethod
     def dict_from_row(row: sqlite3.Row) -> Dict[str, Any]:
+        # Je convertis un row SQLite en dictionnaire Python
         return {key: row[key] for key in row.keys()}
 
-# =================== RoleModel ===================
+# RoleModel
 class RoleModel:
+    """Je gère les rôles dans la base de données"""
     @staticmethod
     def get_all() -> List[Dict]:
         with Database.get_connection() as conn:
@@ -59,10 +65,12 @@ class RoleModel:
         except sqlite3.IntegrityError:
             return False
 
-# =================== UserModel ===================
+# UserModel
 class UserModel:
+    """Je gère les utilisateurs dans la base"""
     @staticmethod
     def get_all() -> List[Dict]:
+        # Je récupère tous les utilisateurs actifs
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -75,6 +83,7 @@ class UserModel:
 
     @staticmethod
     def get_by_id(user_id: int) -> Optional[Dict]:
+        # Je récupère un utilisateur spécifique
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -89,6 +98,7 @@ class UserModel:
     @staticmethod
     def get_by_username(username: str) -> Optional[Dict]:
         with Database.get_connection() as conn:
+            # Je récupère un utilisateur par son username
             cur = conn.cursor()
             cur.execute("""
                 SELECT u.*, r.nom_role
@@ -101,6 +111,7 @@ class UserModel:
 
     @staticmethod
     def create(username: str, password_hash: str, role_id: int) -> Dict:
+        # Je crée un nouvel utilisateur avec un hash de mot de passe
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -112,6 +123,7 @@ class UserModel:
 
     @staticmethod
     def update(user_id: int, **kwargs) -> bool:
+        # Je mets à jour un utilisateur sur les champs autorisés
         allowed_fields = ['username', 'role_id', 'password_hash', 'anonymized', 'deleted_at']
         updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
         if not updates:
@@ -126,16 +138,19 @@ class UserModel:
 
     @staticmethod
     def delete(user_id: int) -> bool:
+        # Je supprime logiquement un utilisateur en marquant deleted_at
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("UPDATE Utilisateur SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = ?", (user_id,))
             conn.commit()
             return cur.rowcount > 0
 
-# =================== SiteModel ===================
+# SiteModel
 class SiteModel:
+    """Je gère les sites touristiques"""
     @staticmethod
     def get_all(include_prestataire: bool = False) -> List[Dict]:
+        # Je récupère tous les sites, avec ou sans données sensibles
         with Database.get_connection() as conn:
             cur = conn.cursor()
             if include_prestataire:
@@ -165,6 +180,7 @@ class SiteModel:
 
     @staticmethod
     def get_by_id(site_id: int, include_prestataire: bool = False) -> Optional[Dict]:
+        # Je récupère un site spécifique
         with Database.get_connection() as conn:
             cur = conn.cursor()
             if include_prestataire:
@@ -195,6 +211,7 @@ class SiteModel:
 
     @staticmethod
     def create(nom_site: str, commune_id: int, prestataire_id: Optional[int] = None, est_activite: Optional[bool] = False, est_lieu: Optional[bool] = False, description: Optional[str] = None, latitude: Optional[float] = None, longitude: Optional[float] = None) -> Dict:
+        # Je crée un site touristique
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -205,8 +222,9 @@ class SiteModel:
             return {'site_id': cur.lastrowid, 'nom_site': nom_site, 'commune_id': commune_id, 'prestataire_id': prestataire_id}
 
 
-# =================== ParcoursModel ===================
+# ParcoursModel
 class ParcoursModel:
+    """Je gère les parcours et les associations avec les sites"""
     @staticmethod
     def get_all(include_prestataire: bool = False) -> List[Dict]:
         with Database.get_connection() as conn:
@@ -218,7 +236,7 @@ class ParcoursModel:
             """)
             parcours_list = [Database.dict_from_row(row) for row in cur.fetchall()]
 
-            # Récupère les sites liés pour chaque parcours
+            # Je récupère les sites liés pour chaque parcours
             for parcours in parcours_list:
                 cur.execute("""
                     SELECT ps.ordre_visite, s.site_id, s.nom_site, s.est_activite, s.est_lieu, s.description,
@@ -241,6 +259,7 @@ class ParcoursModel:
 
     @staticmethod
     def get_by_id(parcours_id: int, include_prestataire: bool = False) -> Optional[Dict]:
+        # Je récupère un parcours spécifique avec ses sites
         with Database.get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
@@ -314,18 +333,19 @@ class ParcoursModel:
 
     @staticmethod
     def delete(parcours_id: int) -> bool:
-        """Supprime un parcours et ses associations."""
+        # Je supprime d'abord les liaisons puis le parcours
         with Database.get_connection() as conn:
             cur = conn.cursor()
-            # Supprime les liaisons Parcours_Site d'abord
+            # Je supprime les liaisons Parcours_Site d'abord
             cur.execute("DELETE FROM Parcours_Site WHERE parcours_id = ?", (parcours_id,))
-            # Puis supprime le parcours
+            # Puis je supprime le parcours
             cur.execute("DELETE FROM Parcours WHERE parcours_id = ?", (parcours_id,))
             conn.commit()
             return cur.rowcount > 0
 
-# =================== CommuneModel ===================
+# CommuneModel
 class CommuneModel:
+    """Je gère les communes"""
     @staticmethod
     def get_all_communes() -> List[Dict]:
         with Database.get_connection() as conn:
@@ -337,8 +357,9 @@ class CommuneModel:
             """)
             return [Database.dict_from_row(row) for row in cur.fetchall()]
 
-# =================== DepartmentModel ===================
+# DepartmentModel
 class DepartmentModel:
+    """Je gère les départements"""
     @staticmethod
     def get_all_departments() -> List[Dict]:
         with Database.get_connection() as conn:

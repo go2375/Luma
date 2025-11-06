@@ -3,10 +3,11 @@ import sys
 from datetime import timedelta
 from dotenv import load_dotenv
 
+# Je charge les variables d'environnement depuis le fichier .env
 load_dotenv()
 
 class Config:
-    # SECRET_KEY pour JWT
+    # Je récupère la clé secrète pour encoder/décoder les JWT
     SECRET_KEY: str = os.environ.get("SECRET_KEY")
     if not SECRET_KEY:
         print("Erreur : SECRET_KEY non définie. Veuillez définir votre SECRET_KEY.")
