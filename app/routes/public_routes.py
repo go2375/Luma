@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.services.parcours_service import ParcoursService
-from app.services.site_service import SiteService  # Assure-toi d'avoir ce service
+from app.services.site_service import SiteService
 
 router = APIRouter(prefix="/api/public", tags=["Public"])
 
