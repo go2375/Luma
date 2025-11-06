@@ -44,11 +44,11 @@ for p in parcours:
     ParcoursService.create(p["nom_parcours"], p["createur_id"], p["sites"])
 
 # Démo : parcours
-{
-  "nom_parcours": "Parcours Test",
-  "createur_id": 1,
-  "sites": [
-    {"site_id": 1, "ordre_visite": 1},
-    {"site_id": 2, "ordre_visite": 2}
-  ]
-}
+# {
+#   "nom_parcours": "Parcours Test",
+#   "createur_id": 1,
+#   "sites": [
+#     {"site_id": 1, "ordre_visite": 1},
+#     {"site_id": 2, "ordre_visite": 2}
+#   ]
+# }

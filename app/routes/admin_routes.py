@@ -6,6 +6,7 @@ from typing import List, Optional
 # J’importe mes services métier (logique du parcours) et l’authentification
 from app.services.parcours_service import ParcoursService
 from app.auth import AuthService
+from fastapi import APIRouter, HTTPException, Depends, Request
 
 # Je crée un routeur spécifique à la partie Admin de l’API
 # Cela me permet de mieux structurer le projet et d’éviter les conflits de routes
